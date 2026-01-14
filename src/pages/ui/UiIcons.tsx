@@ -36,7 +36,8 @@ const UiIcons = () => {
     }
 
     const renderIcon = (name: string) => {
-        const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[name]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const IconComponent = (LucideIcons as any)[name]
         if (!IconComponent) return null
         return <IconComponent size={24} className="text-hud-text-primary" />
     }
