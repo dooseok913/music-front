@@ -4,6 +4,8 @@ import dotenv from 'dotenv'
 import { testConnection } from './config/db.js'
 import tidalRoutes from './routes/tidal.js'
 import playlistRoutes from './routes/playlists.js'
+import itunesRoutes from './routes/itunes.js'
+import youtubeRoutes from './routes/youtube.js'
 
 dotenv.config()
 
@@ -28,6 +30,8 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/tidal', tidalRoutes)
 app.use('/api/playlists', playlistRoutes)
+app.use('/api/itunes', itunesRoutes)
+app.use('/api/youtube', youtubeRoutes)
 
 // Error handling
 app.use((err, req, res, next) => {

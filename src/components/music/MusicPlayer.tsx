@@ -1,8 +1,9 @@
-import { Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2, List, Music } from 'lucide-react'
+import { Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2, List, Music, Pause } from 'lucide-react'
 import { useState } from 'react'
+import { useMusic } from '../../context/MusicContext'
 
 const MusicPlayer = () => {
-    const [isPlaying, setIsPlaying] = useState(false)
+    const { currentTrack, isPlaying, togglePlay } = useMusic()
     const [progress, setProgress] = useState(35)
     const [volume, setVolume] = useState(70)
 
@@ -18,16 +19,20 @@ const MusicPlayer = () => {
         setVolume(percent)
     }
 
+    if (!currentTrack) {
+        return null
+    }
+
     return (
-        <div className="fixed bottom-0 left-64 right-0 h-20 bg-hud-bg-secondary/80 backdrop-blur-md border-t border-hud-border-secondary z-40 px-6 flex items-center gap-6">
+        <div className="fixed bottom-0 left-64 right-0 h-20 bg-hud-bg-secondary/80 backdrop-blur-md border-t border-hud-border-secondary z-40 px-6 flex items-center gap-6 animate-in slide-in-from-bottom duration-300">
             {/* Track Info */}
             <div className="flex items-center gap-4 min-w-[200px]">
                 <div className="w-12 h-12 bg-gradient-to-br from-hud-accent-primary to-hud-accent-info rounded-lg flex items-center justify-center text-white/50">
                     <Music className="w-5 h-5" />
                 </div>
                 <div>
-                    <h4 className="text-sm font-semibold text-hud-text-primary">Midnight Dreams</h4>
-                    <p className="text-xs text-hud-text-muted">The Dreamers</p>
+                    <h4 className="text-sm font-semibold text-hud-text-primary">{currentTrack.title}</h4>
+                    <p className="text-xs text-hud-text-muted">{currentTrack.artist}</p>
                 </div>
             </div>
 
@@ -41,14 +46,11 @@ const MusicPlayer = () => {
                         <SkipBack className="w-4 h-4" />
                     </button>
                     <button
-                        onClick={() => setIsPlaying(!isPlaying)}
+                        onClick={togglePlay}
                         className="w-10 h-10 bg-hud-accent-primary rounded-full flex items-center justify-center text-hud-bg-primary hover:bg-hud-accent-primary/90 transition-all"
                     >
                         {isPlaying ? (
-                            <div className="flex gap-0.5">
-                                <div className="w-1 h-4 bg-current rounded-full"></div>
-                                <div className="w-1 h-4 bg-current rounded-full"></div>
-                            </div>
+                            <Pause className="w-4 h-4" fill="currentColor" />
                         ) : (
                             <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
                         )}

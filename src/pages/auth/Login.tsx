@@ -2,11 +2,16 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import Button from '../../components/common/Button'
+import TidalLoginModal from '../../components/auth/TidalLoginModal'
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [isTidalModalOpen, setIsTidalModalOpen] = useState(false)
+
+    // Import Tidal Modal (dynamic import or just use if it's imported at top)
+    // For now I'll assume we need to add the import at the top
 
     return (
         <div className="min-h-screen bg-hud-bg-primary hud-grid-bg flex items-center justify-center p-6">
@@ -94,15 +99,25 @@ const Login = () => {
                     </div>
 
                     {/* Social Login */}
-                    <div className="grid grid-cols-3 gap-3">
-                        {['Google', 'GitHub', 'Twitter'].map((provider) => (
-                            <button
-                                key={provider}
-                                className="py-2.5 px-4 bg-hud-bg-primary border border-hud-border-secondary rounded-lg text-sm text-hud-text-secondary hover:border-hud-accent-primary hover:text-hud-accent-primary transition-hud"
-                            >
-                                {provider}
-                            </button>
-                        ))}
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => setIsTidalModalOpen(true)}
+                            className="w-full py-3 px-4 bg-black text-white rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-gray-900 transition-all border border-gray-800"
+                        >
+                            <div className="w-5 h-5 bg-white text-black rounded-sm flex items-center justify-center font-bold font-serif text-xs">T</div>
+                            Continue with Tidal
+                        </button>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            {['Google', 'GitHub', 'Twitter'].map((provider) => (
+                                <button
+                                    key={provider}
+                                    className="py-2.5 px-4 bg-hud-bg-primary border border-hud-border-secondary rounded-lg text-sm text-hud-text-secondary hover:border-hud-accent-primary hover:text-hud-accent-primary transition-hud"
+                                >
+                                    {provider}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Register Link */}

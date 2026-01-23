@@ -23,6 +23,7 @@ import Gallery from './pages/Gallery'
 // Auth
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import TidalCallback from './pages/auth/TidalCallback'
 
 // AI Studio
 import AiChat from './pages/ai/AiChat'
@@ -75,6 +76,9 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/coming-soon" element={<ComingSoon />} />
                 <Route path="/404" element={<Error404 />} />
+
+                {/* Tidal Callback */}
+                <Route path="/tidal-callback" element={<TidalCallback />} />
 
                 {/* Main Layout Pages */}
                 <Route path="/" element={<MainLayout />}>

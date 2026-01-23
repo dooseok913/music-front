@@ -8,10 +8,11 @@ const TIDAL_API_URL = 'https://api.tidal.com/v1'
 
 let cachedToken = null
 let tokenExpiry = null
+let userToken = null
+let userTokenExpiry = null
 
-// Get Access Token (Client Credentials Flow)
-async function getTidalToken() {
-    // Return cached token if still valid
+// Get Client Credentials Token
+async function getClientToken() {
     if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
         return cachedToken
     }
@@ -41,14 +42,18 @@ async function getTidalToken() {
 
     const data = await response.json()
     cachedToken = data.access_token
-    tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000 // Refresh 1 min early
-
+    tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000
     return cachedToken
 }
 
-// Helper: Make Tidal API Request
+// Helper: Make Tidal API Request (Prefer User Token)
 async function tidalRequest(endpoint, params = {}) {
-    const token = await getTidalToken()
+    let token = userToken && userTokenExpiry && Date.now() < userTokenExpiry ? userToken : null
+
+    // Fallback to client token if no user token
+    if (!token) {
+        token = await getClientToken()
+    }
 
     const url = new URL(`${TIDAL_API_URL}${endpoint}`)
     Object.entries(params).forEach(([key, value]) => {
@@ -72,13 +77,139 @@ async function tidalRequest(endpoint, params = {}) {
     return response.json()
 }
 
+// POST /api/tidal/auth/device - Init Device Flow
+router.post('/auth/device', async (req, res) => {
+    try {
+        const clientId = process.env.TIDAL_CLIENT_ID
+        // Using Open Access scope or default
+        // const scope = 'r_usr w_usr' 
+
+        const response = await fetch('https://auth.tidal.com/v1/oauth2/device_authorization', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `client_id=${clientId}&scope=r_usr`
+        })
+
+        if (!response.ok) {
+            const errorText = await response.text()
+            console.error('Tidal Device Auth Init Failed:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorText,
+                clientIdPartial: clientId ? clientId.substring(0, 5) + '...' : 'MISSING'
+            })
+            throw new Error(errorText)
+        }
+
+        const data = await response.json()
+        res.json(data)
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+// POST /api/tidal/auth/token - Polling for Token (Device Flow)
+router.post('/auth/token', async (req, res) => {
+    try {
+        const { deviceCode } = req.body
+        const clientId = process.env.TIDAL_CLIENT_ID
+        const clientSecret = process.env.TIDAL_CLIENT_SECRET
+        const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+
+        const response = await fetch(TIDAL_AUTH_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${credentials}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=${deviceCode}&scope=r_usr`
+        })
+
+        const data = await response.json()
+
+        if (data.error) {
+            return res.status(400).json(data)
+        }
+
+        userToken = data.access_token
+        userTokenExpiry = Date.now() + (data.expires_in * 1000)
+
+        res.json({ success: true, user: data.user })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+// --- WEB AUTH FLOW ---
+
+// GET /api/tidal/auth/login - Redirect to Tidal Login
+router.get('/auth/login', (req, res) => {
+    const clientId = process.env.TIDAL_CLIENT_ID
+    const redirectUri = 'http://localhost:5173/tidal-callback' // Frontend Callback Route
+    const scope = 'r_usr w_usr'
+
+    // Construct Authorization Code Flow URL
+    // Note: Tidal's documented auth URL for web is https://auth.tidal.com/v1/oauth2/authorize
+    // But some docs say login.tidal.com/oauth2/authorize. We stick to auth.tidal.com/v1
+
+    const authUrl = `https://auth.tidal.com/v1/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}`
+
+    // If called via AJAX, return URL. If browser, could redirect. 
+    // Ideally we just return the URL so frontend pops it up.
+    // However, if we use window.open('/api/...') it expects a page or redirect.
+    res.redirect(authUrl)
+})
+
+// POST /api/tidal/auth/exchange - Exchange Code for Token
+router.post('/auth/exchange', async (req, res) => {
+    try {
+        const { code } = req.body
+        const clientId = process.env.TIDAL_CLIENT_ID
+        const clientSecret = process.env.TIDAL_CLIENT_SECRET
+        const redirectUri = 'http://localhost:5173/tidal-callback'
+
+        const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+
+        const response = await fetch(TIDAL_AUTH_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${credentials}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(redirectUri)}`
+        })
+
+        const data = await response.json()
+
+        if (data.error) {
+            console.error('Token Exchange Error:', data)
+            return res.status(400).json({ success: false, error: data.error_description || data.error })
+        }
+
+        userToken = data.access_token
+        userTokenExpiry = Date.now() + (data.expires_in * 1000)
+
+        res.json({ success: true, user: { username: data.user?.username || 'Tidal User' } })
+    } catch (error) {
+        console.error('Exchange Exception:', error)
+        res.status(500).json({ success: false, error: error.message })
+    }
+})
+
 // GET /api/tidal/auth/status - Check auth status
 router.get('/auth/status', async (req, res) => {
     try {
-        const token = await getTidalToken()
+        // Just verify if we can get a token (client or user)
+        const hasUserToken = !!(userToken && userTokenExpiry && Date.now() < userTokenExpiry)
+
+        if (!hasUserToken) {
+            await getClientToken() // Ensure client token works at least
+        }
+
         res.json({
-            authenticated: true,
-            expiresAt: tokenExpiry
+            authenticated: true, // System is authenticated
+            userConnected: hasUserToken, // User is logged in
+            type: hasUserToken ? 'User' : 'Client'
         })
     } catch (error) {
         res.json({
@@ -143,7 +274,7 @@ router.get('/featured', async (req, res) => {
         const { countryCode = 'US', limit = 20 } = req.query
 
         // Search for popular genre playlists
-        const genres = ['K-POP', 'Pop', 'Hip-Hop', 'Rock', 'Electronic']
+        const genres = ['Classical', 'Vocal Jazz', 'K-POP']
         const results = []
 
         for (const genre of genres) {

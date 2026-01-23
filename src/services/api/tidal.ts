@@ -25,6 +25,7 @@ export interface TidalFeaturedResponse {
 
 export interface TidalAuthStatus {
     authenticated: boolean
+    userConnected?: boolean
     expiresAt?: number
     error?: string
 }
@@ -47,4 +48,12 @@ export const tidalApi = {
     // Get playlist tracks
     getPlaylistTracks: (id: string, limit: number = 50) =>
         get(`/tidal/playlists/${id}/items?limit=${limit}`),
+
+    // --- Device Auth Flow ---
+    initDeviceAuth: () => post<any>('/tidal/auth/device', {}),
+
+    pollToken: (deviceCode: string) => post<any>('/tidal/auth/token', { deviceCode }),
+
+    // --- Web Auth Flow ---
+    exchangeCode: (code: string) => post<any>('/tidal/auth/exchange', { code })
 }

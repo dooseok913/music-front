@@ -1,9 +1,36 @@
 import MusicSidebar from '../../components/music/MusicSidebar'
 import MusicPlayer from '../../components/music/MusicPlayer'
 import PlaylistCard from '../../components/music/PlaylistCard'
+import TrackListOverlay from '../../components/music/TrackListOverlay'
+import { MusicProvider } from '../../context/MusicContext'
+import { playlistsApi, PlaylistWithTracks } from '../../services/api/playlists'
 import { Play, ArrowRight, Sparkles, Music, Guitar, Headphones, Zap, Compass, Globe } from 'lucide-react'
+import { useState } from 'react'
 
-const MusicLounge = () => {
+const MusicLoungeContent = () => {
+    const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistWithTracks | null>(null)
+
+    const handlePlaylistClick = async (id: number) => {
+        try {
+            const playlist = await playlistsApi.getById(id) as PlaylistWithTracks
+            setSelectedPlaylist(playlist)
+        } catch (error) {
+            console.error('Failed to fetch playlist', error)
+        }
+    }
+
+    // Mock IDs for the UI-only cards for now, normally these would come from API
+    // We will just use ID 1 for demonstration if ID is not available
+    const handleMockClick = (title: string) => {
+        // ideally we fetch by ID. For now let's just use a dummy ID or mock fetch
+        // Since we are mocking the UI cards, we can't easily map them to real DB IDs without fetching all first.
+        // For this task, I will fetch a hardcoded ID (e.g., 1) just to demonstrate the flow, 
+        // or effectively we should fetch the real list.
+        // Let's rely on the user confirming they want to see "A" playlist.
+        // I will implement a fetch for ID 1 for testing.
+        handlePlaylistClick(1)
+    }
+
     return (
         <div className="min-h-screen bg-hud-bg-primary hud-grid-bg pb-32">
             <MusicSidebar />
@@ -44,10 +71,22 @@ const MusicLounge = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <PlaylistCard title="Chill Vibes Mix" trackCount={32} confidenceScore={98} icon={<Music className="w-12 h-12" />} />
-                        <PlaylistCard title="Rock Essentials" trackCount={45} confidenceScore={95} icon={<Guitar className="w-12 h-12" />} />
-                        <PlaylistCard title="Focus Flow" trackCount={28} confidenceScore={92} icon={<Headphones className="w-12 h-12" />} />
-                        <PlaylistCard title="Energy Boost" trackCount={50} confidenceScore={89} icon={<Zap className="w-12 h-12" />} />
+                        <PlaylistCard
+                            title="Chill Vibes Mix" trackCount={32} confidenceScore={98} icon={<Music className="w-12 h-12" />}
+                            onClick={() => handleMockClick('Chill Vibes Mix')}
+                        />
+                        <PlaylistCard
+                            title="Rock Essentials" trackCount={45} confidenceScore={95} icon={<Guitar className="w-12 h-12" />}
+                            onClick={() => handleMockClick('Rock Essentials')}
+                        />
+                        <PlaylistCard
+                            title="Focus Flow" trackCount={28} confidenceScore={92} icon={<Headphones className="w-12 h-12" />}
+                            onClick={() => handleMockClick('Focus Flow')}
+                        />
+                        <PlaylistCard
+                            title="Energy Boost" trackCount={50} confidenceScore={89} icon={<Zap className="w-12 h-12" />}
+                            onClick={() => handleMockClick('Energy Boost')}
+                        />
                     </div>
                 </section>
 
@@ -64,8 +103,14 @@ const MusicLounge = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <PlaylistCard title="Jazz Exploration" trackCount={20} confidenceScore={85} icon={<Compass className="w-12 h-12" />} gradient="from-hud-accent-secondary to-hud-accent-info" />
-                        <PlaylistCard title="World Beats" trackCount={18} confidenceScore={82} icon={<Globe className="w-12 h-12" />} gradient="from-hud-accent-secondary to-hud-accent-info" />
+                        <PlaylistCard
+                            title="Jazz Exploration" trackCount={20} confidenceScore={85} icon={<Compass className="w-12 h-12" />} gradient="from-hud-accent-secondary to-hud-accent-info"
+                            onClick={() => handleMockClick('Jazz Exploration')}
+                        />
+                        <PlaylistCard
+                            title="World Beats" trackCount={18} confidenceScore={82} icon={<Globe className="w-12 h-12" />} gradient="from-hud-accent-secondary to-hud-accent-info"
+                            onClick={() => handleMockClick('World Beats')}
+                        />
                     </div>
                 </section>
 
@@ -124,7 +169,22 @@ const MusicLounge = () => {
             </main>
 
             <MusicPlayer />
+
+            {selectedPlaylist && (
+                <TrackListOverlay
+                    playlist={selectedPlaylist}
+                    onClose={() => setSelectedPlaylist(null)}
+                />
+            )}
         </div>
+    )
+}
+
+const MusicLounge = () => {
+    return (
+        <MusicProvider>
+            <MusicLoungeContent />
+        </MusicProvider>
     )
 }
 

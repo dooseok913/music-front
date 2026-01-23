@@ -6,6 +6,7 @@ interface PlaylistCardProps {
     confidenceScore?: number
     icon?: React.ReactNode
     gradient?: string
+    onClick?: () => void
 }
 
 const PlaylistCard = ({
@@ -13,10 +14,14 @@ const PlaylistCard = ({
     trackCount,
     confidenceScore = 95,
     icon,
-    gradient = 'from-hud-accent-primary to-hud-accent-info'
+    gradient = 'from-hud-accent-primary to-hud-accent-info',
+    onClick
 }: PlaylistCardProps) => {
     return (
-        <div className="hud-card hud-card-bottom rounded-xl p-5 cursor-pointer group transition-all hover:scale-105">
+        <div
+            onClick={onClick}
+            className="hud-card hud-card-bottom rounded-xl p-5 cursor-pointer group transition-all hover:scale-105"
+        >
             {/* Cover */}
             <div className={`w-full aspect-square bg-gradient-to-br ${gradient} rounded-lg mb-4 flex items-center justify-center text-white/40 relative overflow-hidden`}>
                 {icon || <Music className="w-12 h-12" />}
