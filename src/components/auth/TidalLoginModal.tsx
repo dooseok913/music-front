@@ -1,22 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, ExternalLink, Loader2, CheckCircle, AlertCircle, Copy, Check } from 'lucide-react'
+import { X, ExternalLink, Loader2, AlertCircle, Music, Copy, Check, Smartphone, Globe } from 'lucide-react'
 import { tidalApi } from '../../services/api/tidal'
 import Button from '../common/Button'
 
 interface TidalLoginModalProps {
     isOpen: boolean
     onClose: () => void
-    onSuccess: (user: any) => void
+    onSuccess: (response: any) => void
 }
 
 const TidalLoginModal = ({ isOpen, onClose, onSuccess }: TidalLoginModalProps) => {
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [deviceCode, setDeviceCode] = useState<string | null>(null)
     const [userCode, setUserCode] = useState<string | null>(null)
     const [verificationUri, setVerificationUri] = useState<string | null>(null)
     const [expiresIn, setExpiresIn] = useState<number>(0)
-    const [pollingInterval, setPollingInterval] = useState<number>(5)
 
     const pollTimerRef = useRef<NodeJS.Timeout | null>(null)
     const isMounted = useRef(true)
@@ -31,7 +29,7 @@ const TidalLoginModal = ({ isOpen, onClose, onSuccess }: TidalLoginModalProps) =
 
     useEffect(() => {
         if (isOpen) {
-            initAuth()
+            resetState()
         } else {
             stopPolling()
             resetState()
@@ -39,9 +37,8 @@ const TidalLoginModal = ({ isOpen, onClose, onSuccess }: TidalLoginModalProps) =
     }, [isOpen])
 
     const resetState = () => {
-        setLoading(true)
+        setLoading(false)
         setError(null)
-        setDeviceCode(null)
         setUserCode(null)
         setVerificationUri(null)
     }
@@ -62,7 +59,7 @@ const TidalLoginModal = ({ isOpen, onClose, onSuccess }: TidalLoginModalProps) =
         }
     }
 
-    const initAuth = async () => {
+    const initDeviceAuth = async () => {
         try {
             setLoading(true)
             setError(null)
@@ -72,11 +69,14 @@ const TidalLoginModal = ({ isOpen, onClose, onSuccess }: TidalLoginModalProps) =
             if (!isMounted.current) return
 
             if (response.deviceCode) {
-                setDeviceCode(response.deviceCode)
                 setUserCode(response.userCode)
-                setVerificationUri(response.verificationUri)
+                // Ensure verificationUri has protocol
+                let uri = response.verificationUri || 'link.tidal.com'
+                if (!uri.startsWith('http')) {
+                    uri = `https://${uri}`
+                }
+                setVerificationUri(uri)
                 setExpiresIn(response.expiresIn)
-                setPollingInterval(response.interval || 5)
 
                 setLoading(false)
                 startPolling(response.deviceCode, response.interval || 5)
@@ -101,22 +101,86 @@ const TidalLoginModal = ({ isOpen, onClose, onSuccess }: TidalLoginModalProps) =
                 if (response.success && response.user) {
                     if (isMounted.current) {
                         stopPolling()
-                        onSuccess(response.user)
+                        onSuccess(response)
                         onClose()
                     }
                 } else if (response.error && response.error !== 'authorization_pending') {
-                    // Stop polling on fatal errors
                     stopPolling()
                     if (isMounted.current) {
                         setError(response.error_description || response.error)
                     }
                 }
             } catch (err) {
-                // Network errors or other issues, maybe retry or stop?
-                // For now, let's keep polling unless it's a 500
                 console.warn('Polling error', err)
             }
         }, intervalSeconds * 1000)
+    }
+
+    // Web Flow (Popup) Support
+    useEffect(() => {
+        const handleLoginSuccess = (data: any) => {
+            onSuccess(data)
+            onClose()
+            // Clear the storage item
+            localStorage.removeItem('tidal_login_result')
+        }
+
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data?.type === 'TIDAL_LOGIN_SUCCESS') {
+                handleLoginSuccess(event.data.response)
+            }
+        }
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === 'tidal_login_result' && event.newValue) {
+                try {
+                    const data = JSON.parse(event.newValue)
+                    if (data.type === 'TIDAL_LOGIN_SUCCESS') {
+                        handleLoginSuccess(data.response)
+                    }
+                } catch (e) {
+                    console.error('Failed to parse storage data', e)
+                }
+            }
+        }
+
+        window.addEventListener('message', handleMessage)
+        window.addEventListener('storage', handleStorage)
+
+        // Also check if result is already there (if the window was opened/closed quickly)
+        const existingResult = localStorage.getItem('tidal_login_result')
+        if (existingResult) {
+            try {
+                const data = JSON.parse(existingResult)
+                if (data.type === 'TIDAL_LOGIN_SUCCESS') {
+                    // Check if message is fresh (last 30 seconds)
+                    if (Date.now() - data.timestamp < 30000) {
+                        handleLoginSuccess(data.response)
+                    }
+                }
+            } catch (e) { }
+        }
+
+        return () => {
+            window.removeEventListener('message', handleMessage)
+            window.removeEventListener('storage', handleStorage)
+        }
+    }, [onSuccess, onClose])
+
+    const handleWebLogin = () => {
+        const width = 600
+        const height = 800
+        const left = window.screen.width / 2 - width / 2
+        const top = window.screen.height / 2 - height / 2
+
+        // Clear any old results before starting
+        localStorage.removeItem('tidal_login_result')
+
+        window.open(
+            'http://localhost:3001/api/tidal/auth/login',
+            'TidalLogin',
+            `width=${width},height=${height},top=${top},left=${left},noopener,noreferrer`
+        )
     }
 
     if (!isOpen) return null
@@ -124,77 +188,99 @@ const TidalLoginModal = ({ isOpen, onClose, onSuccess }: TidalLoginModalProps) =
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-hud-bg-card border border-hud-border-secondary rounded-xl max-w-md w-full shadow-2xl relative overflow-hidden">
-                {/* Header */}
                 <div className="p-6 border-b border-hud-border-secondary flex items-center justify-between">
                     <h2 className="text-xl font-bold text-hud-text-primary flex items-center gap-2">
                         <div className="w-8 h-8 bg-black text-white rounded flex items-center justify-center font-bold font-serif">T</div>
-                        Login with Tidal
+                        Sign in with Tidal
                     </h2>
-                    <button
-                        onClick={onClose}
-                        className="text-hud-text-muted hover:text-hud-text-primary transition-colors"
-                    >
+                    <button onClick={onClose} className="text-hud-text-muted hover:text-hud-text-primary transition-colors">
                         <X size={24} />
                     </button>
                 </div>
 
-                {/* Content */}
-                <div className="p-8 flex flex-col items-center text-center">
+                <div className="p-2 space-y-6">
                     {loading ? (
-                        <div className="py-12 flex flex-col items-center gap-4">
-                            <Loader2 className="w-10 h-10 text-hud-accent-primary animate-spin" />
-                            <p className="text-hud-text-secondary">Connecting to Tidal...</p>
+                        <div className="py-20 flex flex-col items-center justify-center gap-4">
+                            <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
+                            <p className="text-gray-400 animate-pulse">인증 정보를 가져오는 중...</p>
                         </div>
-                    ) : error ? (
-                        <div className="py-8 flex flex-col items-center gap-4">
-                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
-                                <AlertCircle size={32} />
+                    ) : userCode ? (
+                        <div className="flex flex-col items-center py-4 animate-in fade-in zoom-in duration-300">
+                            <div className="mb-6 text-center">
+                                <p className="text-cyan-400 font-medium mb-1">복사된 코드를 아래 링크에서 입력하세요</p>
+                                <p className="text-xs text-gray-500">인증이 완료되면 이 창은 자동으로 닫힙니다</p>
                             </div>
-                            <h3 className="text-lg font-bold text-hud-text-primary">Connection Failed</h3>
-                            <p className="text-sm text-hud-text-secondary">{error}</p>
-                            <Button variant="secondary" onClick={initAuth} className="mt-4">
-                                Try Again
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="w-full space-y-6">
-                            <div className="space-y-2">
-                                <p className="text-hud-text-secondary">
-                                    Enter this code at the link below to connect your account:
-                                </p>
-                                <div className="relative">
-                                    <div className="text-4xl font-mono font-bold text-hud-accent-primary tracking-widest bg-hud-bg-secondary py-4 rounded-lg border border-hud-border-secondary select-all">
+
+                            <div className="relative group w-full max-w-[280px] mb-8">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                                <div className="relative bg-black rounded-xl p-6 border border-white/10 flex flex-col items-center">
+                                    <span className="text-4xl font-black text-white tracking-[0.2em] font-mono leading-none">
                                         {userCode}
-                                    </div>
+                                    </span>
                                     <button
                                         onClick={handleCopyCode}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-hud-text-muted hover:text-hud-text-primary transition-colors"
-                                        title="Copy Code"
+                                        className={`mt-4 w-full py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${copied ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-white/5 hover:bg-white/10 text-gray-400 border-white/10'} border`}
                                     >
-                                        {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                                        {copied ? <Check size={16} /> : <Copy size={16} />}
+                                        <span className="text-sm font-medium">{copied ? '복사 완료' : '코드 복사'}</span>
                                     </button>
                                 </div>
                             </div>
 
                             <a
-                                href={verificationUri?.startsWith('http') ? verificationUri : `https://${verificationUri}`}
+                                href={verificationUri || '#'}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center justify-center gap-2 w-full py-3 bg-hud-accent-primary text-hud-bg-primary rounded-lg font-bold hover:bg-hud-accent-primary/90 transition-all btn-glow"
+                                className="group/link flex items-center gap-2 py-3 px-8 bg-white text-black rounded-lg font-bold hover:bg-cyan-50 transition-all text-base"
                             >
-                                Go to {verificationUri} <ExternalLink size={18} />
+                                Tidal 인증 사이트로 이동
+                                <ExternalLink size={18} className="group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-transform" />
                             </a>
 
-                            <div className="flex items-center justify-center gap-2 text-sm text-hud-text-muted">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span>Waiting for you to log in...</span>
-                            </div>
-
-                            <div className="pt-4 border-t border-hud-border-secondary">
-                                <p className="text-xs text-hud-text-muted">
-                                    This code will expire in {Math.floor(expiresIn / 60)} minutes.
+                            <button
+                                onClick={() => { setUserCode(null); stopPolling(); }}
+                                className="mt-8 text-sm text-gray-500 hover:text-white transition-colors"
+                            >
+                                다른 방법으로 로그인
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4 py-2">
+                            {/* Device Auth - Recommended */}
+                            <button
+                                onClick={initDeviceAuth}
+                                className="group relative flex flex-col items-start p-6 bg-[#1a1a1a] rounded-2xl border border-white/5 hover:border-cyan-500/50 transition-all text-left"
+                            >
+                                <div className="absolute top-4 right-4 bg-cyan-500/10 text-cyan-400 text-[10px] font-bold px-2 py-1 rounded">권장</div>
+                                <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <Smartphone className="w-6 h-6 text-cyan-400" />
+                                </div>
+                                <h3 className="text-lg font-bold text-white mb-2">기기 코드로 로그인</h3>
+                                <p className="text-sm text-gray-400 leading-relaxed">
+                                    가장 안정적인 방식입니다. 표시되는 6자리 코드를 입력하여 안전하게 연동하세요.
                                 </p>
-                            </div>
+                            </button>
+
+                            {/* Web Auth */}
+                            <button
+                                onClick={handleWebLogin}
+                                className="group flex flex-col items-start p-6 bg-[#1a1a1a] rounded-2xl border border-white/5 hover:border-white/20 transition-all text-left"
+                            >
+                                <div className="w-12 h-12 bg-gray-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <Globe className="w-6 h-6 text-gray-400" />
+                                </div>
+                                <h3 className="text-lg font-bold text-white mb-2">웹 브라우저로 로그인</h3>
+                                <p className="text-sm text-gray-400 leading-relaxed">
+                                    팝업창을 통해 평소처럼 아이디/비밀번호로 로그인합니다.
+                                </p>
+                            </button>
+
+                            {error && (
+                                <div className="mt-2 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-500 text-sm">
+                                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

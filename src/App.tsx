@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
 import MainLayout from './layouts/MainLayout'
 
 // Dashboard
@@ -23,7 +24,9 @@ import Gallery from './pages/Gallery'
 // Auth
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import Onboarding from './pages/auth/Onboarding'
 import TidalCallback from './pages/auth/TidalCallback'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 
 // AI Studio
 import AiChat from './pages/ai/AiChat'
@@ -69,83 +72,86 @@ import GatewayMusicSpace from './pages/music/GatewayMusicSpace'
 
 function App() {
     return (
-        <Router>
-            <Routes>
-                {/* Auth Pages (No Layout) */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/coming-soon" element={<ComingSoon />} />
-                <Route path="/404" element={<Error404 />} />
+        <AuthProvider>
+            <Router>
+                <Routes>
+                    {/* Auth Pages (No Layout) */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                    <Route path="/coming-soon" element={<ComingSoon />} />
+                    <Route path="/404" element={<Error404 />} />
 
-                {/* Tidal Callback */}
-                <Route path="/tidal-callback" element={<TidalCallback />} />
+                    {/* Tidal Callback */}
+                    <Route path="/tidal-callback" element={<TidalCallback />} />
 
-                {/* Root redirect to Music Home */}
-                <Route path="/" element={<Navigate to="/music/home" replace />} />
+                    {/* Root redirect to Music Home */}
+                    <Route path="/" element={<Navigate to="/music/home" replace />} />
 
-                {/* Main Layout Pages */}
-                <Route path="/dashboard" element={<MainLayout />}>
-                    <Route index element={<Dashboard />} />
-                    <Route path="analytics" element={<Analytics />} />
+                    {/* Main Layout Pages (Protected) */}
+                    <Route path="/dashboard" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+                        <Route index element={<Dashboard />} />
+                        <Route path="analytics" element={<Analytics />} />
 
-                    {/* Email */}
-                    <Route path="email/inbox" element={<EmailInbox />} />
-                    <Route path="email/compose" element={<EmailCompose />} />
-                    <Route path="email/detail/:id" element={<EmailDetail />} />
+                        {/* Email */}
+                        <Route path="email/inbox" element={<EmailInbox />} />
+                        <Route path="email/compose" element={<EmailCompose />} />
+                        <Route path="email/detail/:id" element={<EmailDetail />} />
 
-                    {/* Core Pages */}
-                    <Route path="widgets" element={<Widgets />} />
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="calendar" element={<Calendar />} />
-                    <Route path="settings" element={<Settings />} />
-                    <Route path="scrum-board" element={<ScrumBoard />} />
-                    <Route path="products" element={<Products />} />
-                    <Route path="pricing" element={<Pricing />} />
-                    <Route path="gallery" element={<Gallery />} />
+                        {/* Core Pages */}
+                        <Route path="widgets" element={<Widgets />} />
+                        <Route path="profile" element={<Profile />} />
+                        <Route path="calendar" element={<Calendar />} />
+                        <Route path="settings" element={<Settings />} />
+                        <Route path="scrum-board" element={<ScrumBoard />} />
+                        <Route path="products" element={<Products />} />
+                        <Route path="pricing" element={<Pricing />} />
+                        <Route path="gallery" element={<Gallery />} />
 
-                    {/* AI Studio */}
-                    <Route path="ai/chat" element={<AiChat />} />
-                    <Route path="ai/image-generator" element={<AiImageGenerator />} />
+                        {/* AI Studio */}
+                        <Route path="ai/chat" element={<AiChat />} />
+                        <Route path="ai/image-generator" element={<AiImageGenerator />} />
 
-                    {/* POS System */}
-                    <Route path="pos/customer-order" element={<PosCustomerOrder />} />
-                    <Route path="pos/kitchen-order" element={<PosKitchenOrder />} />
-                    <Route path="pos/counter-checkout" element={<PosCounterCheckout />} />
-                    <Route path="pos/table-booking" element={<PosTableBooking />} />
-                    <Route path="pos/menu-stock" element={<PosMenuStock />} />
+                        {/* POS System */}
+                        <Route path="pos/customer-order" element={<PosCustomerOrder />} />
+                        <Route path="pos/kitchen-order" element={<PosKitchenOrder />} />
+                        <Route path="pos/counter-checkout" element={<PosCounterCheckout />} />
+                        <Route path="pos/table-booking" element={<PosTableBooking />} />
+                        <Route path="pos/menu-stock" element={<PosMenuStock />} />
 
-                    {/* UI Components */}
-                    <Route path="ui/bootstrap" element={<UiBootstrap />} />
-                    <Route path="ui/buttons" element={<UiButtons />} />
-                    <Route path="ui/card" element={<UiCard />} />
-                    <Route path="ui/icons" element={<UiIcons />} />
-                    <Route path="ui/modal-notification" element={<UiModalNotification />} />
-                    <Route path="ui/typography" element={<UiTypography />} />
-                    <Route path="ui/tabs-accordions" element={<UiTabsAccordions />} />
+                        {/* UI Components */}
+                        <Route path="ui/bootstrap" element={<UiBootstrap />} />
+                        <Route path="ui/buttons" element={<UiButtons />} />
+                        <Route path="ui/card" element={<UiCard />} />
+                        <Route path="ui/icons" element={<UiIcons />} />
+                        <Route path="ui/modal-notification" element={<UiModalNotification />} />
+                        <Route path="ui/typography" element={<UiTypography />} />
+                        <Route path="ui/tabs-accordions" element={<UiTabsAccordions />} />
 
-                    {/* Forms */}
-                    <Route path="form/elements" element={<FormElements />} />
-                    <Route path="form/plugins" element={<FormPlugins />} />
-                    <Route path="form/wizards" element={<FormWizards />} />
+                        {/* Forms */}
+                        <Route path="form/elements" element={<FormElements />} />
+                        <Route path="form/plugins" element={<FormPlugins />} />
+                        <Route path="form/wizards" element={<FormWizards />} />
 
-                    {/* Tables */}
-                    <Route path="table/elements" element={<TableElements />} />
-                    <Route path="table/plugins" element={<TablePlugins />} />
+                        {/* Tables */}
+                        <Route path="table/elements" element={<TableElements />} />
+                        <Route path="table/plugins" element={<TablePlugins />} />
 
-                    {/* Charts */}
-                    <Route path="chart/chartjs" element={<ChartJs />} />
-                </Route>
+                        {/* Charts */}
+                        <Route path="chart/chartjs" element={<ChartJs />} />
+                    </Route>
 
-                {/* Music Pages (Separate Layout - No MainLayout) */}
-                <Route path="music/home" element={<MusicHome />} />
-                <Route path="music/lounge" element={<MusicLounge />} />
-                <Route path="music/lab" element={<GatewayMusicSpace />} />
-                <Route path="music/external-space" element={<ExternalMusicSpace />} />
+                    {/* Music Pages */}
+                    <Route path="music/home" element={<MusicHome />} />
+                    <Route path="music/lounge" element={<ProtectedRoute><MusicLounge /></ProtectedRoute>} />
+                    <Route path="music/lab" element={<ProtectedRoute><GatewayMusicSpace /></ProtectedRoute>} />
+                    <Route path="music/external-space" element={<ProtectedRoute><ExternalMusicSpace /></ProtectedRoute>} />
 
-                {/* 404 Fallback */}
-                <Route path="*" element={<Error404 />} />
-            </Routes>
-        </Router>
+                    {/* 404 Fallback */}
+                    <Route path="*" element={<Error404 />} />
+                </Routes>
+            </Router>
+        </AuthProvider>
     )
 }
 

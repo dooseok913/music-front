@@ -49,6 +49,10 @@ export const tidalApi = {
     getPlaylistTracks: (id: string, limit: number = 50) =>
         get(`/tidal/playlists/${id}/items?limit=${limit}`),
 
+    // Alias for getPlaylistTracks
+    getPlaylistItems: (id: string, limit: number = 50) =>
+        get(`/tidal/playlists/${id}/items?limit=${limit}`),
+
     // --- Device Auth Flow ---
     initDeviceAuth: () => post<any>('/tidal/auth/device', {}),
 

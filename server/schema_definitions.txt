@@ -1,0 +1,59 @@
+--- users ---
+CREATE TABLE `users` (
+  `user_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '사용자 고유 ID',
+  `email` varchar(255) NOT NULL COMMENT '이메일 (로그인 ID)',
+  `password_hash` varchar(255) NOT NULL COMMENT '비밀번호 해시',
+  `nickname` varchar(100) NOT NULL COMMENT '사용자 닉네임',
+  `streaming_services` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`streaming_services`)),
+  `user_role` enum('USER','ADMIN') NOT NULL DEFAULT 'USER' COMMENT '사용자 역할',
+  `created_at` datetime DEFAULT current_timestamp() COMMENT '가입일시',
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '수정일시',
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='사용자 회원가입 및 로그인 정보'
+
+--- playlists ---
+CREATE TABLE `playlists` (
+  `playlist_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '플레이리스트 고유 ID',
+  `user_id` bigint(20) NOT NULL COMMENT '사용자 ID',
+  `title` varchar(200) NOT NULL COMMENT '플레이리스트 제목',
+  `description` text DEFAULT NULL COMMENT '플레이리스트 설명',
+  `space_type` enum('PMS','EMS','GMS') NOT NULL DEFAULT 'EMS' COMMENT '공간 타입 (PMS, EMS, GMS)',
+  `status_flag` enum('PTP','PRP','PFP') NOT NULL DEFAULT 'PTP' COMMENT '상태 플래그 (PTP:임시, PRP:정규, PFP:필터링됨)',
+  `source_type` enum('Platform','Upload','System') NOT NULL DEFAULT 'Platform' COMMENT '출처 타입 (Platform:스트리밍, Upload:파일업로드, System:시스템생성)',
+  `external_id` varchar(255) DEFAULT NULL COMMENT '외부 플랫폼에서의 플레이리스트 ID',
+  `cover_image` varchar(500) DEFAULT NULL COMMENT '커버 이미지 URL',
+  `created_at` datetime DEFAULT current_timestamp() COMMENT '생성일시',
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '수정일시',
+  PRIMARY KEY (`playlist_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `playlists_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='플레이리스트 정보 (PMS, EMS, GMS 통합 관리)'
+
+--- tracks ---
+CREATE TABLE `tracks` (
+  `track_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '트랙 고유 ID',
+  `title` varchar(255) NOT NULL COMMENT '곡 제목',
+  `artist` varchar(255) NOT NULL COMMENT '아티스트',
+  `album` varchar(255) DEFAULT NULL COMMENT '앨범명',
+  `duration` int(11) DEFAULT NULL COMMENT '재생 시간(초)',
+  `isrc` varchar(50) DEFAULT NULL COMMENT '국제 표준 녹음 코드',
+  `external_metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT '외부 플랫폼별 상세 ID 및 메타데이터 (JSON)' CHECK (json_valid(`external_metadata`)),
+  `created_at` datetime DEFAULT current_timestamp() COMMENT '등록일시',
+  PRIMARY KEY (`track_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='전체 트랙 메타데이터 저장소'
+
+--- playlist_tracks ---
+CREATE TABLE `playlist_tracks` (
+  `map_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '매핑 ID',
+  `playlist_id` bigint(20) NOT NULL COMMENT '플레이리스트 ID',
+  `track_id` bigint(20) NOT NULL COMMENT '트랙 ID',
+  `order_index` int(11) NOT NULL DEFAULT 0 COMMENT '플레이리스트 내 정렬 순서',
+  `added_at` datetime DEFAULT current_timestamp() COMMENT '추가된 일시',
+  PRIMARY KEY (`map_id`),
+  KEY `track_id` (`track_id`),
+  KEY `idx_playlist_order` (`playlist_id`,`order_index`),
+  CONSTRAINT `playlist_tracks_ibfk_1` FOREIGN KEY (`playlist_id`) REFERENCES `playlists` (`playlist_id`) ON DELETE CASCADE,
+  CONSTRAINT `playlist_tracks_ibfk_2` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`track_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='플레이리스트와 트랙 간의 관계 정의'
+

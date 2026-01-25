@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { testConnection, queryOne, insert } from './config/db.js'
+import authRoutes from './routes/auth.js'
 import tidalRoutes from './routes/tidal.js'
 import playlistRoutes from './routes/playlists.js'
 import itunesRoutes from './routes/itunes.js'
@@ -51,6 +52,7 @@ app.get('/api/health', (req, res) => {
 })
 
 // Routes
+app.use('/api/auth', authRoutes)
 app.use('/api/tidal', tidalRoutes)
 app.use('/api/playlists', playlistRoutes)
 app.use('/api/itunes', itunesRoutes)

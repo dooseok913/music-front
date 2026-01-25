@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { tidalApi } from '../../services/api/tidal'
@@ -7,6 +7,7 @@ const TidalCallback = () => {
     const [searchParams] = useSearchParams()
     const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing')
     const [errorMsg, setErrorMsg] = useState('')
+    const isExchanging = useRef(false) // Flag to ensure handleExchange runs only once
 
     // Check if this is a popup window
     const isPopup = window.opener !== null || window.name === 'TidalLogin'
@@ -21,9 +22,10 @@ const TidalCallback = () => {
             return
         }
 
-        if (code) {
+        if (code && !isExchanging.current) {
+            isExchanging.current = true // Set flag to true to prevent re-execution
             handleExchange(code)
-        } else {
+        } else if (!code) { // Only set error if no code and no error param
             setStatus('error')
             setErrorMsg('No authorization code found')
         }
@@ -34,19 +36,31 @@ const TidalCallback = () => {
             const response = await tidalApi.exchangeCode(code)
             if (response.success) {
                 setStatus('success')
-                // Notify parent window if opened as popup
-                if (window.opener) {
-                    window.opener.postMessage({ type: 'TIDAL_LOGIN_SUCCESS', user: response.user }, '*')
+
+                const messageData = {
+                    type: 'TIDAL_LOGIN_SUCCESS',
+                    response,
+                    timestamp: Date.now()
                 }
+
+                // 1. Primary: postMessage to opener
+                if (window.opener) {
+                    try {
+                        window.opener.postMessage(messageData, '*')
+                    } catch (e) {
+                        console.error('postMessage failed', e)
+                    }
+                }
+
+                // 2. Fallback: localStorage (works if same origin)
+                localStorage.setItem('tidal_login_result', JSON.stringify(messageData))
+
                 // Always try to close if it's a popup
                 if (isPopup) {
+                    // Try to close after a short delay
                     setTimeout(() => {
-                        try {
-                            window.close()
-                        } catch (e) {
-                            // If close fails, user will see "close this window" message
-                        }
-                    }, 1500)
+                        window.close()
+                    }, 1000)
                 }
             } else {
                 throw new Error('Exchange failed')

@@ -14,11 +14,7 @@ const pool = mysql.createPool({
     connectionLimit: 10,
     queueLimit: 0,
     enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
-    // Force mysql_native_password authentication
-    authPlugins: {
-        mysql_native_password: () => () => Buffer.from(process.env.DB_PASSWORD + '\0')
-    }
+    keepAliveInitialDelay: 0
 })
 
 // Test connection

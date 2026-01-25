@@ -1,7 +1,163 @@
 import { Link } from 'react-router-dom'
-import { Music, Users, Disc, Crown, Star, TrendingUp, ArrowRight, Play, Heart, Sparkles } from 'lucide-react'
+import { Music, Users, Disc, Crown, Star, TrendingUp, ArrowRight, Play, Heart, Sparkles, Loader2, RefreshCw, LogIn, UserPlus, LogOut, User } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { playlistsApi, Playlist } from '../../services/api/playlists'
+import { tidalApi } from '../../services/api/tidal'
+import { itunesService } from '../../services/api/itunes'
+import { useAuth } from '../../contexts/AuthContext'
+
+interface HomeStats {
+    totalPlaylists: number
+    totalTracks: number
+    aiPending: number
+    likes: number
+}
+
+interface TopTrack {
+    title: string
+    artist: string
+}
 
 const MusicHome = () => {
+    const { user, isAuthenticated, logout } = useAuth()
+    const [loading, setLoading] = useState(true)
+    const [seeding, setSeeding] = useState(false)
+    const [stats, setStats] = useState<HomeStats>({ totalPlaylists: 0, totalTracks: 0, aiPending: 0, likes: 0 })
+    const [pmsPlaylists, setPmsPlaylists] = useState<Playlist[]>([])
+    const [gmsPlaylists, setGmsPlaylists] = useState<Playlist[]>([])
+    const [emsPlaylists, setEmsPlaylists] = useState<Playlist[]>([])
+    const [tidalTracks, setTidalTracks] = useState<TopTrack[]>([])
+    const [youtubeTracks, setYoutubeTracks] = useState<TopTrack[]>([])
+    const [appleTracks, setAppleTracks] = useState<TopTrack[]>([])
+
+    // Auto-seed and load data
+    const loadData = useCallback(async () => {
+        try {
+            setLoading(true)
+
+            // 1. First, try to seed if empty
+            try {
+                const seedResult = await playlistsApi.seedPlaylists()
+                if (seedResult.imported > 0) {
+                    console.log(`Auto-seeded ${seedResult.imported} playlists`)
+                }
+            } catch (e) {
+                console.log('Seed skipped or failed:', e)
+            }
+
+            // 2. Fetch all playlists by space
+            const [pmsRes, gmsRes, emsRes] = await Promise.all([
+                playlistsApi.getPlaylists('PMS'),
+                playlistsApi.getPlaylists('GMS'),
+                playlistsApi.getPlaylists('EMS')
+            ])
+
+            setPmsPlaylists(pmsRes.playlists || [])
+            setGmsPlaylists(gmsRes.playlists || [])
+            setEmsPlaylists(emsRes.playlists || [])
+
+            // Calculate stats
+            const allPlaylists = [...(pmsRes.playlists || []), ...(gmsRes.playlists || []), ...(emsRes.playlists || [])]
+            const totalTracks = allPlaylists.reduce((sum, p) => sum + (p.trackCount || 0), 0)
+
+            setStats({
+                totalPlaylists: allPlaylists.length,
+                totalTracks,
+                aiPending: (gmsRes.playlists || []).length,
+                likes: Math.floor(totalTracks * 0.25) // Placeholder
+            })
+
+            // 3. Load platform top tracks
+            try {
+                const tidalFeatured = await tidalApi.getFeatured()
+                if (tidalFeatured?.featured?.[0]?.playlists?.[0]) {
+                    const firstPlaylist = tidalFeatured.featured[0].playlists[0]
+                    const details = await tidalApi.getPlaylistItems(firstPlaylist.uuid)
+                    setTidalTracks((details.items || []).slice(0, 5).map((t: any) => ({
+                        title: t.title || t.name || 'Unknown',
+                        artist: t.artist || t.artists?.[0]?.name || 'Unknown'
+                    })))
+                }
+            } catch (e) {
+                console.log('Tidal tracks fetch failed:', e)
+                setTidalTracks([
+                    { title: 'Super Shy', artist: 'NewJeans' },
+                    { title: 'Hype Boy', artist: 'NewJeans' },
+                    { title: 'OMG', artist: 'NewJeans' },
+                    { title: 'Ditto', artist: 'NewJeans' },
+                    { title: 'Attention', artist: 'NewJeans' }
+                ])
+            }
+
+            try {
+                const itunesResults = await itunesService.search('K-Pop 2024')
+                setAppleTracks(itunesResults.slice(0, 5).map(t => ({
+                    title: t.title,
+                    artist: t.artist
+                })))
+            } catch (e) {
+                console.log('iTunes tracks fetch failed:', e)
+                setAppleTracks([
+                    { title: 'Celebrity', artist: 'IU' },
+                    { title: 'Blueming', artist: 'IU' },
+                    { title: 'Eight', artist: 'IU' },
+                    { title: 'Lilac', artist: 'IU' },
+                    { title: 'Palette', artist: 'IU' }
+                ])
+            }
+
+            // YouTube placeholder (API key required)
+            setYoutubeTracks([
+                { title: 'FLOWER', artist: 'JISOO' },
+                { title: 'Pink Venom', artist: 'BLACKPINK' },
+                { title: 'Butter', artist: 'BTS' },
+                { title: 'Dynamite', artist: 'BTS' },
+                { title: 'Boy With Luv', artist: 'BTS' }
+            ])
+
+        } catch (err) {
+            console.error('Failed to load home data:', err)
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
+
+    // Force seed
+    const handleForceSeed = async () => {
+        setSeeding(true)
+        try {
+            await playlistsApi.seedPlaylists()
+            await loadData()
+        } catch (e) {
+            console.error('Force seed failed:', e)
+        } finally {
+            setSeeding(false)
+        }
+    }
+
+    // Get top artists from playlists
+    const topArtists = ['IU', 'BTS', 'NewJeans', 'Aespa', 'BLACKPINK']
+
+    // Get recommended playlists (top 3 from GMS or PMS)
+    const recommendedPlaylists = [...gmsPlaylists, ...pmsPlaylists]
+        .sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0))
+        .slice(0, 3)
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-hud-bg-primary hud-grid-bg flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-12 h-12 text-hud-accent-primary animate-spin mx-auto mb-4" />
+                    <p className="text-hud-text-secondary">음악 데이터 로딩 중...</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen bg-hud-bg-primary hud-grid-bg">
             {/* Header */}
@@ -16,6 +172,33 @@ const MusicHome = () => {
                         <Link to="/music/lounge" className="text-hud-text-secondary hover:text-hud-accent-success transition-colors">PMS</Link>
                         <Link to="/music/lab" className="text-hud-text-secondary hover:text-hud-accent-warning transition-colors">GMS</Link>
                         <Link to="/music/external-space" className="text-hud-text-secondary hover:text-hud-accent-info transition-colors">EMS</Link>
+                        <div className="flex items-center gap-3 ml-4 pl-4 border-l border-hud-border-secondary">
+                            {isAuthenticated ? (
+                                <>
+                                    <div className="flex items-center gap-2 text-hud-text-secondary">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-hud-accent-primary to-hud-accent-info rounded-full flex items-center justify-center">
+                                            <User className="w-4 h-4 text-white" />
+                                        </div>
+                                        <span className="text-hud-text-primary font-medium">{user?.name}</span>
+                                    </div>
+                                    <button
+                                        onClick={logout}
+                                        className="flex items-center gap-1.5 text-hud-text-muted hover:text-hud-accent-danger transition-colors"
+                                    >
+                                        <LogOut className="w-4 h-4" /> 로그아웃
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link to="/login" className="flex items-center gap-1.5 text-hud-text-secondary hover:text-hud-accent-primary transition-colors">
+                                        <LogIn className="w-4 h-4" /> 로그인
+                                    </Link>
+                                    <Link to="/register" className="flex items-center gap-1.5 bg-hud-accent-primary text-hud-bg-primary px-3 py-1.5 rounded-lg font-medium hover:bg-hud-accent-primary/90 transition-all">
+                                        <UserPlus className="w-4 h-4" /> 회원가입
+                                    </Link>
+                                </>
+                            )}
+                        </div>
                     </nav>
                 </div>
             </header>
@@ -45,10 +228,10 @@ const MusicHome = () => {
                 {/* Quick Stats */}
                 <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     {[
-                        { label: '총 플레이리스트', value: '247', icon: Disc, color: 'hud-accent-primary' },
-                        { label: '저장된 트랙', value: '3,492', icon: Music, color: 'hud-accent-secondary' },
-                        { label: 'AI 추천 대기', value: '15', icon: Sparkles, color: 'hud-accent-warning' },
-                        { label: '좋아요', value: '892', icon: Heart, color: 'hud-accent-danger' },
+                        { label: '총 플레이리스트', value: stats.totalPlaylists.toLocaleString(), icon: Disc, color: 'hud-accent-primary' },
+                        { label: '저장된 트랙', value: stats.totalTracks.toLocaleString(), icon: Music, color: 'hud-accent-secondary' },
+                        { label: 'AI 추천 대기', value: stats.aiPending.toLocaleString(), icon: Sparkles, color: 'hud-accent-warning' },
+                        { label: '좋아요', value: stats.likes.toLocaleString(), icon: Heart, color: 'hud-accent-danger' },
                     ].map((stat) => (
                         <div key={stat.label} className="hud-card hud-card-bottom rounded-xl p-4 text-center">
                             <stat.icon className={`w-6 h-6 mx-auto mb-2 text-${stat.color}`} />
@@ -57,6 +240,28 @@ const MusicHome = () => {
                         </div>
                     ))}
                 </section>
+
+                {/* Empty State - Show if no data */}
+                {stats.totalPlaylists === 0 && (
+                    <section className="hud-card hud-card-bottom rounded-xl p-8 mb-8 text-center border-2 border-dashed border-hud-border-secondary">
+                        <Music className="w-16 h-16 text-hud-text-muted mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-hud-text-primary mb-2">아직 음악 데이터가 없습니다</h3>
+                        <p className="text-hud-text-secondary mb-6">외부 플랫폼에서 플레이리스트를 가져와서 시작하세요</p>
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={handleForceSeed}
+                                disabled={seeding}
+                                className="bg-hud-accent-primary text-hud-bg-primary px-6 py-3 rounded-lg font-semibold flex items-center gap-2 hover:bg-hud-accent-primary/90 transition-all"
+                            >
+                                {seeding ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                                {seeding ? '데이터 로드 중...' : '자동으로 데이터 불러오기'}
+                            </button>
+                            <Link to="/music/external-space" className="bg-hud-bg-secondary border border-hud-border-secondary text-hud-text-primary px-6 py-3 rounded-lg font-medium flex items-center gap-2 hover:bg-hud-bg-hover transition-all">
+                                <ArrowRight className="w-5 h-5" /> EMS로 이동
+                            </Link>
+                        </div>
+                    </section>
+                )}
 
                 {/* Best Artists */}
                 <section className="mb-8">
@@ -88,21 +293,23 @@ const MusicHome = () => {
                     </h2>
                     <div className="grid md:grid-cols-3 gap-4">
                         {[
-                            { name: 'Tidal', color: 'from-blue-500 to-cyan-400', tracks: ['Butter - BTS', 'Dynamite - BTS', 'Super Shy - NewJeans', 'Hype Boy - NewJeans', 'Next Level - Aespa'] },
-                            { name: 'YouTube Music', color: 'from-red-500 to-red-600', tracks: ['FLOWER - JISOO', 'OMG - NewJeans', 'Ditto - NewJeans', 'Pink Venom - BLACKPINK', 'ZZZ - BIBI'] },
-                            { name: 'Apple Music', color: 'from-pink-500 to-rose-500', tracks: ['Celebrity - IU', 'Blueming - IU', 'Eight - IU', 'Lilac - IU', 'Palette - IU'] },
+                            { name: 'Tidal', color: 'from-blue-500 to-cyan-400', tracks: tidalTracks },
+                            { name: 'YouTube Music', color: 'from-red-500 to-red-600', tracks: youtubeTracks },
+                            { name: 'Apple Music', color: 'from-pink-500 to-rose-500', tracks: appleTracks },
                         ].map((platform) => (
                             <div key={platform.name} className="hud-card hud-card-bottom rounded-xl overflow-hidden">
                                 <div className={`bg-gradient-to-r ${platform.color} px-4 py-3 text-white font-semibold`}>
                                     {platform.name} Top 5
                                 </div>
                                 <div className="p-4 space-y-2">
-                                    {platform.tracks.map((track, idx) => (
-                                        <div key={track} className="flex items-center gap-3 text-sm">
+                                    {platform.tracks.length > 0 ? platform.tracks.map((track, idx) => (
+                                        <div key={`${track.title}-${idx}`} className="flex items-center gap-3 text-sm">
                                             <span className="w-5 h-5 bg-hud-bg-secondary rounded-full flex items-center justify-center text-xs font-medium text-hud-text-muted">{idx + 1}</span>
-                                            <span className="text-hud-text-primary truncate flex-1">{track}</span>
+                                            <span className="text-hud-text-primary truncate flex-1">{track.title} - {track.artist}</span>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="text-hud-text-muted text-sm text-center py-4">데이터 로딩 중...</div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -113,34 +320,61 @@ const MusicHome = () => {
                 <section className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-hud-text-primary flex items-center gap-2">
-                            <Star className="w-5 h-5 text-hud-accent-success" /> 추천 플레이리스트 3선
+                            <Star className="w-5 h-5 text-hud-accent-success" /> 추천 플레이리스트 {recommendedPlaylists.length > 0 ? `${recommendedPlaylists.length}선` : ''}
                         </h2>
                         <Link to="/music/lab" className="text-hud-accent-primary text-sm flex items-center gap-1 hover:underline">
                             GMS에서 더보기 <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[
-                            { title: 'K-POP Hits 2024', score: 95, tracks: 42 },
-                            { title: 'Chill & Study', score: 92, tracks: 35 },
-                            { title: 'Morning Energy', score: 88, tracks: 28 },
-                        ].map((playlist) => (
-                            <div key={playlist.title} className="hud-card hud-card-bottom rounded-xl p-5 hover:scale-105 transition-transform cursor-pointer group">
+                        {recommendedPlaylists.length > 0 ? recommendedPlaylists.map((playlist) => (
+                            <div key={playlist.id} className="hud-card hud-card-bottom rounded-xl p-5 hover:scale-105 transition-transform cursor-pointer group">
                                 <div className="w-full aspect-video bg-gradient-to-br from-hud-accent-success to-hud-accent-primary rounded-lg mb-4 flex items-center justify-center relative overflow-hidden">
-                                    <Music className="w-12 h-12 text-white/50" />
+                                    {playlist.coverImage ? (
+                                        <img src={playlist.coverImage} alt={playlist.title} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Music className="w-12 h-12 text-white/50" />
+                                    )}
                                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Play className="w-10 h-10 text-white" fill="white" />
                                     </div>
                                 </div>
-                                <h3 className="font-semibold text-hud-text-primary mb-1">{playlist.title}</h3>
+                                <h3 className="font-semibold text-hud-text-primary mb-1 truncate">{playlist.title}</h3>
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-hud-text-muted">{playlist.tracks} tracks</span>
+                                    <span className="text-hud-text-muted">{playlist.trackCount || 0} tracks</span>
                                     <span className="bg-hud-accent-success/20 text-hud-accent-success px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1">
-                                        <Star className="w-3 h-3" fill="currentColor" /> {playlist.score}%
+                                        <Star className="w-3 h-3" fill="currentColor" /> {playlist.aiScore || 85}%
                                     </span>
                                 </div>
                             </div>
-                        ))}
+                        )) : emsPlaylists.length > 0 ? emsPlaylists.slice(0, 3).map((playlist) => (
+                            <div key={playlist.id} className="hud-card hud-card-bottom rounded-xl p-5 hover:scale-105 transition-transform cursor-pointer group">
+                                <div className="w-full aspect-video bg-gradient-to-br from-hud-accent-warning to-orange-400 rounded-lg mb-4 flex items-center justify-center relative overflow-hidden">
+                                    {playlist.coverImage ? (
+                                        <img src={playlist.coverImage} alt={playlist.title} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Music className="w-12 h-12 text-white/50" />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Play className="w-10 h-10 text-white" fill="white" />
+                                    </div>
+                                </div>
+                                <h3 className="font-semibold text-hud-text-primary mb-1 truncate">{playlist.title}</h3>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-hud-text-muted">{playlist.trackCount || 0} tracks</span>
+                                    <span className="bg-hud-accent-warning/20 text-hud-accent-warning px-2 py-0.5 rounded-full text-xs font-semibold">
+                                        EMS
+                                    </span>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="col-span-3 text-center py-8 text-hud-text-muted">
+                                <p>아직 플레이리스트가 없습니다. EMS에서 음악을 가져와보세요!</p>
+                                <Link to="/music/external-space" className="inline-flex items-center gap-2 mt-4 text-hud-accent-primary hover:underline">
+                                    EMS로 이동 <ArrowRight className="w-4 h-4" />
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </section>
 
@@ -151,9 +385,21 @@ const MusicHome = () => {
                     </h2>
                     <div className="grid sm:grid-cols-3 gap-6">
                         {[
-                            { type: '플레이리스트', name: 'K-POP Hits 2024', sub: '42 tracks' },
-                            { type: '앨범', name: 'The Astronaut', sub: 'Jin' },
-                            { type: '트랙', name: 'Super Shy', sub: 'NewJeans' },
+                            {
+                                type: '플레이리스트',
+                                name: [...pmsPlaylists, ...gmsPlaylists, ...emsPlaylists].sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0))[0]?.title || 'K-POP Hits 2024',
+                                sub: `${[...pmsPlaylists, ...gmsPlaylists, ...emsPlaylists].sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0))[0]?.trackCount || 0} tracks`
+                            },
+                            {
+                                type: '앨범',
+                                name: appleTracks[0]?.title || 'The Astronaut',
+                                sub: appleTracks[0]?.artist || 'Jin'
+                            },
+                            {
+                                type: '트랙',
+                                name: tidalTracks[0]?.title || 'Super Shy',
+                                sub: tidalTracks[0]?.artist || 'NewJeans'
+                            },
                         ].map((item) => (
                             <div key={item.type} className="flex items-center gap-4">
                                 <div className="w-16 h-16 bg-gradient-to-br from-hud-accent-warning to-orange-400 rounded-xl flex items-center justify-center">
@@ -161,7 +407,7 @@ const MusicHome = () => {
                                 </div>
                                 <div>
                                     <div className="text-xs text-hud-accent-warning font-semibold uppercase">{item.type}</div>
-                                    <div className="font-semibold text-hud-text-primary">{item.name}</div>
+                                    <div className="font-semibold text-hud-text-primary truncate max-w-[150px]">{item.name}</div>
                                     <div className="text-sm text-hud-text-muted">{item.sub}</div>
                                 </div>
                             </div>
