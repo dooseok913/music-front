@@ -4,7 +4,9 @@
       "Bash(wc:*)",
       "Bash(docker-compose up:*)",
       "Bash(curl:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)"
     ]
   }
 }

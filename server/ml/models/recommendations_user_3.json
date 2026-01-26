@@ -1,0 +1,288 @@
+{
+  "user_id": 3,
+  "generated_at": "2026-01-27T05:43:29.266241",
+  "model_info": {
+    "type": "NCF",
+    "embedding_dim": 64,
+    "hidden_layers": [
+      128,
+      64,
+      32
+    ],
+    "epochs": 50,
+    "final_loss": 0.0006448460170877693,
+    "final_accuracy": 100.0
+  },
+  "recommendations": [
+    {
+      "track_id": 412,
+      "title": "Villain",
+      "artist": "Stella Jang",
+      "album": "STELLA I",
+      "popularity": 57,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2733476d9cfd714ad0d01790012",
+      "ncf_score": 99.95
+    },
+    {
+      "track_id": 441,
+      "title": "그대 작은 나의 세상이 되어",
+      "artist": "카더가든",
+      "album": "부재 - EP",
+      "popularity": 62,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273572c3481841c6f020cfa80cc",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 443,
+      "title": "LOOK AT ME",
+      "artist": "ALLDAY PROJECT",
+      "album": "ALLDAY PROJECT - EP",
+      "popularity": 61,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273ffacccec4a6fb69c5c316588",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 451,
+      "title": "Good Goodbye",
+      "artist": "화사",
+      "album": "Good Goodbye - Single",
+      "popularity": 81,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273f7ec5c454a78dfb0086c0c97",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 453,
+      "title": "Moonwalkin'",
+      "artist": "LNGSHOT",
+      "album": "SHOT CALLERS - EP",
+      "popularity": 80,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2739ae175cd44e09688bb7c0f4f",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 467,
+      "title": "IRIS OUT",
+      "artist": "요네즈 켄시",
+      "album": "IRIS OUT - Single",
+      "popularity": 88,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2736d1d4e875e2424cdd07f3232",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 473,
+      "title": "Man I Need",
+      "artist": "Olivia Dean",
+      "album": "The Art of Loving",
+      "popularity": 97,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273e3d69e17dde129037a1f09e2",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 475,
+      "title": "OVERDRIVE",
+      "artist": "투어스",
+      "album": "TWS 4th Mini Album 'play hard' - EP",
+      "popularity": 74,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27340d19cd64593d7d7d2ff13eb",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 481,
+      "title": "Gorgeous",
+      "artist": "Doja Cat",
+      "album": "Vie",
+      "popularity": 71,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2733b219fb53c69f313f90fd4ce",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 483,
+      "title": "Golden",
+      "artist": "HUNTR/X, EJAE, AUDREY NUNA, REI AMI & KPop Demon Hunters Cast",
+      "album": "KPop Demon Hunters (Soundtrack from the Netflix Film)",
+      "popularity": 97,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2734dcb6c5df15cf74596ab25a4",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 490,
+      "title": "body",
+      "artist": "다영",
+      "album": "gonna love me, right? - Single",
+      "popularity": 70,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273d0e02167a1fc0a06f8bb38fb",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 492,
+      "title": "꿈의 버스",
+      "artist": "데이식스",
+      "album": "The DECADE",
+      "popularity": 47,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273ad66fa23cc5631496a0195e2",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 494,
+      "title": "Folded",
+      "artist": "Kehlani",
+      "album": "Folded - Single",
+      "popularity": 90,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273c23c6110d6061ba7e2311141",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 496,
+      "title": "Knife",
+      "artist": "엔하이픈",
+      "album": "THE SIN : VANISH",
+      "popularity": 80,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27392beb54472282ca313f34055",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 498,
+      "title": "ONE MORE TIME",
+      "artist": "ALLDAY PROJECT",
+      "album": "ONE MORE TIME - Single",
+      "popularity": 64,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2732975f0c1acccc15ccaadcb3a",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 502,
+      "title": "요즘 바쁜가봐",
+      "artist": "투빅",
+      "album": "Soul Mate - EP",
+      "popularity": 50,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273b5d311ec8b57905feb828d8c",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 504,
+      "title": "타임캡슐",
+      "artist": "다비치",
+      "album": "타임캡슐 - Single",
+      "popularity": 56,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27342f191e863eb9f2c9325a6e6",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 506,
+      "title": "힙합보단 사랑, 사랑보단 돈 (feat. 베이식)",
+      "artist": "노아주다",
+      "album": "M O T N O A H",
+      "popularity": 61,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273a750b53f042970f6cc85c49c",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 512,
+      "title": "Pretty Please",
+      "artist": "Hearts2Hearts",
+      "album": "Pretty Please - Single",
+      "popularity": 69,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273e33809883ceda1e43f34cb14",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 514,
+      "title": "빌려온 고양이 (Do the Dance)",
+      "artist": "아일릿",
+      "album": "bomb - EP",
+      "popularity": 32,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2732a4cdbad499dd294f4871c4b",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 518,
+      "title": "Surf",
+      "artist": "NCT WISH",
+      "album": "COLOR - The 3rd Mini Album",
+      "popularity": 57,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273e90134fa9f7eb98cf336f34f",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 520,
+      "title": "TIT FOR TAT",
+      "artist": "Tate McRae",
+      "album": "TIT FOR TAT - Single",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273d0401a5b4ca2a799cd599abf",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 522,
+      "title": "DANCING ALONE",
+      "artist": "키키",
+      "album": "DANCING ALONE - Single",
+      "popularity": 42,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27376442aec5f27118acc386d4c",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 524,
+      "title": "Tears",
+      "artist": "Sabrina Carpenter",
+      "album": "Man’s Best Friend",
+      "popularity": 89,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273b1863bf95557ea7f357c4947",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 526,
+      "title": "Drowning",
+      "artist": "WOODZ",
+      "album": "OO-LI",
+      "popularity": 71,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273e87a41550ee1b24be3e6e1fb",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 530,
+      "title": "Chains",
+      "artist": "Love Is",
+      "album": "BOYS II PLANET – DEBUT CONCEPT BATTLE - EP",
+      "popularity": 58,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273adcb3091457ba49bbc306275",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 534,
+      "title": "Illegal",
+      "artist": "PinkPantheress",
+      "album": "Illegal - Single",
+      "popularity": 80,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273dd4912edb4982f53a381b98e",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 540,
+      "title": "The Subway",
+      "artist": "Chappell Roan",
+      "album": "The Subway - Single",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2730b96f8824100aab118792442",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 542,
+      "title": "멸종위기사랑",
+      "artist": "이찬혁",
+      "album": "EROS",
+      "popularity": 61,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273d0ee9cab49b6fe98fba4b145",
+      "ncf_score": 2.3
+    },
+    {
+      "track_id": 544,
+      "title": "Whiplash",
+      "artist": "aespa",
+      "album": "Whiplash - The 5th Mini Album - EP",
+      "popularity": 71,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273e467a8e8d7b0aa92d354aa75",
+      "ncf_score": 2.3
+    }
+  ]
+}

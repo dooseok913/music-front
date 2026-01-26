@@ -1,0 +1,459 @@
+{
+  "user_id": 3,
+  "model": "Track2Vec + Cosine Similarity",
+  "embedding_dim": 64,
+  "generated_at": "2026-01-27T05:49:27.034041",
+  "final_loss": 0.0,
+  "recommendations": [
+    {
+      "track_id": 6325,
+      "title": "My My My! - Acoustic",
+      "artist": "Troye Sivan",
+      "album": "My My My! (Acoustic)",
+      "popularity": null,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27383fa86e9c86901d13d3d73b1",
+      "similarity": 90.59
+    },
+    {
+      "track_id": 6593,
+      "title": "I'm on Fire",
+      "artist": "The Staves",
+      "album": "If I Was (Deluxe Edition)",
+      "popularity": 57,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273f66fc88d01b82eb631b58438",
+      "similarity": 89.74
+    },
+    {
+      "track_id": 6334,
+      "title": "Summertime - Acoustic Version",
+      "artist": "Melody Gardot",
+      "album": "Bye Bye Blackbird EP",
+      "popularity": 32,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273a1e0e7aaad6904ccb4a04664",
+      "similarity": 87.71
+    },
+    {
+      "track_id": 4307,
+      "title": "we're not kids anymore",
+      "artist": "Cat Burns",
+      "album": "emotionally unavailable - EP",
+      "popularity": 42,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27378d63606c261f7d212d4ee9a",
+      "similarity": 83.91
+    },
+    {
+      "track_id": 6515,
+      "title": "loml",
+      "artist": "Jessiah",
+      "album": "Taylor Swift Covers",
+      "popularity": 30,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273f3b767f4246aafe2f4527424",
+      "similarity": 80.27
+    },
+    {
+      "track_id": 2068,
+      "title": "Gone With The Wind",
+      "artist": "Toshiko Akiyoshi",
+      "album": "Toshiko's Piano",
+      "popularity": 35,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273cbe81f64a678e79e8d4f0b4a",
+      "similarity": 79.1
+    },
+    {
+      "track_id": 5263,
+      "title": "날 알아줄까",
+      "artist": "Stella Jang",
+      "album": "로봇이 아니야 OST Part.2",
+      "popularity": 43,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2739073c3fd9933bb77195e842d",
+      "similarity": 78.25
+    },
+    {
+      "track_id": 412,
+      "title": "Villain",
+      "artist": "Stella Jang",
+      "album": "STELLA I",
+      "popularity": 57,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2733476d9cfd714ad0d01790012",
+      "similarity": 75.85
+    },
+    {
+      "track_id": 6480,
+      "title": "willow",
+      "artist": "Jessiah",
+      "album": "Taylor Swift Covers",
+      "popularity": 33,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273f3b767f4246aafe2f4527424",
+      "similarity": 73.58
+    },
+    {
+      "track_id": 2280,
+      "title": "No One's Watching Me (feat. Olivia Dean)",
+      "artist": "Ezra Collective",
+      "album": "Dance, No One's Watching",
+      "popularity": 76,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273e8e913bf1a4776a5fe27ce28",
+      "similarity": 73.51
+    },
+    {
+      "track_id": 6272,
+      "title": "I'm On Fire",
+      "artist": "Mark Wilkinson",
+      "album": "Lost In A Dream",
+      "popularity": 23,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273da16231c62a8611479b402b7",
+      "similarity": 71.5
+    },
+    {
+      "track_id": 1086,
+      "title": "Borrowed Eyes (feat. Paul Cornish, Philip Norris & Nazir Ebo)",
+      "artist": "Joshua Redman",
+      "album": "Words Fall Short",
+      "popularity": null,
+      "artwork": null,
+      "similarity": 71.17
+    },
+    {
+      "track_id": 5128,
+      "title": "비누",
+      "artist": "BIBI",
+      "album": "비누",
+      "popularity": 47,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27359b2cee47926f1d35b285519",
+      "similarity": 70.35
+    },
+    {
+      "track_id": 6169,
+      "title": "Hallelujah",
+      "artist": "Mark Wilkinson",
+      "album": "Hand Picked",
+      "popularity": 20,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273c326d96fab36d776093c440e",
+      "similarity": 70.28
+    },
+    {
+      "track_id": 7083,
+      "title": "Un Día de Noviembre",
+      "artist": "Leo Brouwer, Andrés Madariaga",
+      "album": "Autumn’s Gaze",
+      "popularity": 34,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2731a16f6e7462f833ca3e0f8f7",
+      "similarity": 69.95
+    },
+    {
+      "track_id": 5890,
+      "title": "Blinding Lights",
+      "artist": "The Weeknd",
+      "album": "After Hours",
+      "popularity": 90,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
+      "similarity": 68.85
+    },
+    {
+      "track_id": 1980,
+      "title": "Autumn Leaves",
+      "artist": "Wynton Kelly",
+      "album": "Wynton Kelly! (feat. Paul Chambers, Sam Jones & Jimmy Cobb)",
+      "popularity": 29,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27374b1063a622ff87a092187c2",
+      "similarity": 68.62
+    },
+    {
+      "track_id": 6071,
+      "title": "It Must Have Been Love",
+      "artist": "Mark Wilkinson",
+      "album": "It Must Have Been Love",
+      "popularity": 28,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273bf4e210043c0601277ef6601",
+      "similarity": 68.18
+    },
+    {
+      "track_id": 788,
+      "title": "NOBODY'S GIRL",
+      "artist": "Tate McRae",
+      "album": "SO CLOSE TO WHAT??? (deluxe)",
+      "popularity": 80,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273c40dccc1952bb5ed96986869",
+      "similarity": 68.05
+    },
+    {
+      "track_id": 787,
+      "title": "NOBODY'S GIRL",
+      "artist": "Tate McRae",
+      "album": "SO CLOSE TO WHAT??? (deluxe)",
+      "popularity": 80,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273c40dccc1952bb5ed96986869",
+      "similarity": 68.05
+    },
+    {
+      "track_id": 817,
+      "title": "Revolving door",
+      "artist": "Tate McRae",
+      "album": "So Close To What",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27330420759f1a2cd4923c5c65b",
+      "similarity": 67.9
+    },
+    {
+      "track_id": 814,
+      "title": "Revolving door",
+      "artist": "Tate McRae",
+      "album": "So Close To What",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27330420759f1a2cd4923c5c65b",
+      "similarity": 67.9
+    },
+    {
+      "track_id": 520,
+      "title": "TIT FOR TAT",
+      "artist": "Tate McRae",
+      "album": "TIT FOR TAT - Single",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273d0401a5b4ca2a799cd599abf",
+      "similarity": 67.81
+    },
+    {
+      "track_id": 519,
+      "title": "TIT FOR TAT",
+      "artist": "Tate McRae",
+      "album": "TIT FOR TAT - Single",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273d0401a5b4ca2a799cd599abf",
+      "similarity": 67.81
+    },
+    {
+      "track_id": 813,
+      "title": "TIT FOR TAT",
+      "artist": "Tate McRae",
+      "album": "TIT FOR TAT - Single",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273d0401a5b4ca2a799cd599abf",
+      "similarity": 67.81
+    },
+    {
+      "track_id": 810,
+      "title": "TIT FOR TAT",
+      "artist": "Tate McRae",
+      "album": "TIT FOR TAT - Single",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273d0401a5b4ca2a799cd599abf",
+      "similarity": 67.81
+    },
+    {
+      "track_id": 4391,
+      "title": "In The Kitchen",
+      "artist": "Reneé Rapp",
+      "album": "Everything To Everyone",
+      "popularity": 67,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2737251a75664414e04757eafe7",
+      "similarity": 67.67
+    },
+    {
+      "track_id": 6347,
+      "title": "Love The Way You Lie - Part III (Original Demo)",
+      "artist": "Skylar Grey",
+      "album": "Acoustic Pop",
+      "popularity": 38,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27382a9c843bc9f163d159316cf",
+      "similarity": 67.11
+    },
+    {
+      "track_id": 756,
+      "title": "Midnight Sun",
+      "artist": "Zara Larsson",
+      "album": "Midnight Sun",
+      "popularity": 79,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27339905bfc6729b13ec7a7fead",
+      "similarity": 67.05
+    },
+    {
+      "track_id": 755,
+      "title": "Midnight Sun",
+      "artist": "Zara Larsson",
+      "album": "Midnight Sun",
+      "popularity": 79,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27339905bfc6729b13ec7a7fead",
+      "similarity": 67.05
+    },
+    {
+      "track_id": 786,
+      "title": "Just Keep Watching",
+      "artist": "Tate McRae",
+      "album": "F1 The Album",
+      "popularity": 88,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27396e4cfdd4c3aa8088685b262",
+      "similarity": 65.89
+    },
+    {
+      "track_id": 785,
+      "title": "Just Keep Watching",
+      "artist": "Tate McRae",
+      "album": "F1 The Album",
+      "popularity": 88,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27396e4cfdd4c3aa8088685b262",
+      "similarity": 65.89
+    },
+    {
+      "track_id": 6193,
+      "title": "I'm Yours - Acoustic",
+      "artist": "Lusaint",
+      "album": "I'm Yours (Acoustic)",
+      "popularity": null,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2732f7e1b9b6b9640eb43c97043",
+      "similarity": 65.35
+    },
+    {
+      "track_id": 7027,
+      "title": "Csárdás: Csardas",
+      "artist": "Vittorio Monti, Robert Koenig, Si-Qing Lu",
+      "album": "Traumerei: Romantic Violin Favourites",
+      "popularity": 1,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2736ab6435e9373416266006eb9",
+      "similarity": 64.74
+    },
+    {
+      "track_id": 5821,
+      "title": "Call Me Maybe",
+      "artist": "Carly Rae Jepsen",
+      "album": "Kiss (Deluxe)",
+      "popularity": 74,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273a111f7769013f1731e9c697c",
+      "similarity": 63.37
+    },
+    {
+      "track_id": 7003,
+      "title": "Pavane, Op. 50",
+      "artist": "Gabriel Fauré, Czech Symphony Orchestra, Michaela Rózsa Růžičková",
+      "album": "Faure: Pavane / Sicilienne",
+      "popularity": 38,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27303f67e3ffc3cfa1df99f53ee",
+      "similarity": 63.11
+    },
+    {
+      "track_id": 540,
+      "title": "The Subway",
+      "artist": "Chappell Roan",
+      "album": "The Subway - Single",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2730b96f8824100aab118792442",
+      "similarity": 62.28
+    },
+    {
+      "track_id": 539,
+      "title": "The Subway",
+      "artist": "Chappell Roan",
+      "album": "The Subway - Single",
+      "popularity": 83,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2730b96f8824100aab118792442",
+      "similarity": 62.28
+    },
+    {
+      "track_id": 4383,
+      "title": "Casual",
+      "artist": "Chappell Roan",
+      "album": "Casual - Single",
+      "popularity": 80,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27396fa88fb1789be437d5cb4b6",
+      "similarity": 62.2
+    },
+    {
+      "track_id": 4361,
+      "title": "the grudge",
+      "artist": "Olivia Rodrigo",
+      "album": "GUTS",
+      "popularity": 76,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273e85259a1cae29a8d91f2093d",
+      "similarity": 62.11
+    },
+    {
+      "track_id": 1662,
+      "title": "시간의 갈피",
+      "artist": "yangpa",
+      "album": "Homecoming - EP",
+      "popularity": 22,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273e957d7a206edfc35bac8806a",
+      "similarity": 62.03
+    },
+    {
+      "track_id": 1957,
+      "title": "Do Nothing Till You Hear from Me",
+      "artist": "Wynton Kelly",
+      "album": "Kelly Blue (Keepnews Collection)",
+      "popularity": 36,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27399f4dd19ff152eb8a379afcc",
+      "similarity": 61.97
+    },
+    {
+      "track_id": 1698,
+      "title": "그대가 분다",
+      "artist": "HYNN",
+      "album": "그대가 분다 - Single",
+      "popularity": 33,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273d6da3b190aac731e6918eb07",
+      "similarity": 61.78
+    },
+    {
+      "track_id": 4311,
+      "title": "traitor",
+      "artist": "Olivia Rodrigo",
+      "album": "SOUR",
+      "popularity": 87,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273a91c10fe9472d9bd89802e5a",
+      "similarity": 61.09
+    },
+    {
+      "track_id": 5831,
+      "title": "HOT TO GO!",
+      "artist": "Chappell Roan",
+      "album": "The Rise and Fall of a Midwest Princess",
+      "popularity": 77,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27396fa88fb1789be437d5cb4b6",
+      "similarity": 60.47
+    },
+    {
+      "track_id": 4366,
+      "title": "THE GREATEST",
+      "artist": "Billie Eilish",
+      "album": "HIT ME HARD AND SOFT",
+      "popularity": 81,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27371d62ea7ea8a5be92d3c1f62",
+      "similarity": 60.15
+    },
+    {
+      "track_id": 1411,
+      "title": "Lady Lady",
+      "artist": "Olivia Dean",
+      "album": "The Art of Loving",
+      "popularity": 82,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273567808375ab783974642afd0",
+      "similarity": 59.89
+    },
+    {
+      "track_id": 849,
+      "title": "I Think I Like You Better When You’re Gone",
+      "artist": "Reneé Rapp",
+      "album": "BITE ME",
+      "popularity": 76,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2731f22a0d14fbba8dd80b186a4",
+      "similarity": 59.72
+    },
+    {
+      "track_id": 846,
+      "title": "I Think I Like You Better When You’re Gone",
+      "artist": "Reneé Rapp",
+      "album": "BITE ME",
+      "popularity": 76,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2731f22a0d14fbba8dd80b186a4",
+      "similarity": 59.72
+    },
+    {
+      "track_id": 4689,
+      "title": "Air",
+      "artist": "YEJI",
+      "album": "AIR",
+      "popularity": 62,
+      "artwork": "https://i.scdn.co/image/ab67616d0000b27338d7a50443e2a6043d6da247",
+      "similarity": 59.62
+    }
+  ]
+}

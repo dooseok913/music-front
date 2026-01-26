@@ -546,6 +546,101 @@ router.get('/playlists/links', async (req, res) => {
     }
 })
 
+// GET /api/ems/spotify-special - Spotify 특별전 플레이리스트
+router.get('/spotify-special', async (req, res) => {
+    try {
+        // Spotify 특별전 플레이리스트 조회
+        const playlists = await query(`
+            SELECT
+                p.playlist_id as playlistId,
+                p.title,
+                p.description,
+                p.cover_image as coverImage,
+                p.external_id as externalId,
+                COUNT(pt.track_id) as trackCount,
+                CASE
+                    WHEN p.title LIKE '%KPOP%' OR p.title LIKE '%kpop%' OR p.title LIKE '%K-Pop%' THEN 'K-POP'
+                    WHEN p.title LIKE '%R&B%' OR p.title LIKE '%감성%' THEN 'R&B'
+                    WHEN p.title LIKE '%hip%' OR p.title LIKE '%Hip%' OR p.title LIKE '%외힙%' THEN 'Hip-Hop'
+                    WHEN p.title LIKE '%Party%' OR p.title LIKE '%파티%' THEN 'Party'
+                    WHEN p.title LIKE '%WORKOUT%' OR p.title LIKE '%운동%' THEN 'Workout'
+                    WHEN p.title LIKE '%Study%' OR p.title LIKE '%공부%' THEN 'Study'
+                    WHEN p.title LIKE '%Acoustic%' OR p.title LIKE '%어쿠스틱%' THEN 'Acoustic'
+                    WHEN p.title LIKE '%Starbucks%' OR p.title LIKE '%Cafe%' OR p.title LIKE '%카페%' THEN 'Cafe'
+                    WHEN p.title LIKE '%Latino%' OR p.title LIKE '%Latin%' THEN 'Latin'
+                    WHEN p.title LIKE '%EDM%' OR p.title LIKE '%Electronic%' THEN 'EDM'
+                    WHEN p.title LIKE '%Classical%' OR p.title LIKE '%클래식%' THEN 'Classical'
+                    ELSE 'Other'
+                END as category
+            FROM playlists p
+            INNER JOIN playlist_tracks pt ON p.playlist_id = pt.playlist_id
+            WHERE p.description LIKE '%SPOTIFY_SPECIAL%'
+            GROUP BY p.playlist_id
+            ORDER BY category, trackCount DESC
+        `)
+
+        // 총 통계
+        const stats = await queryOne(`
+            SELECT
+                COUNT(DISTINCT p.playlist_id) as totalPlaylists,
+                COUNT(DISTINCT pt.track_id) as totalTracks,
+                SUM(CASE WHEN t.popularity >= 70 THEN 1 ELSE 0 END) as hotTracks
+            FROM playlists p
+            INNER JOIN playlist_tracks pt ON p.playlist_id = pt.playlist_id
+            INNER JOIN tracks t ON pt.track_id = t.track_id
+            WHERE p.description LIKE '%SPOTIFY_SPECIAL%'
+        `)
+
+        // 인기 트랙 TOP 12
+        const hotTracks = await query(`
+            SELECT DISTINCT
+                t.track_id as trackId,
+                t.title,
+                t.artist,
+                t.artwork,
+                t.album,
+                t.popularity,
+                t.release_date as releaseDate,
+                t.spotify_id as spotifyId
+            FROM tracks t
+            INNER JOIN playlist_tracks pt ON t.track_id = pt.track_id
+            INNER JOIN playlists p ON pt.playlist_id = p.playlist_id
+            WHERE p.description LIKE '%SPOTIFY_SPECIAL%'
+            AND t.popularity IS NOT NULL
+            ORDER BY t.popularity DESC
+            LIMIT 12
+        `)
+
+        // 카테고리별 그룹핑
+        const categories = {}
+        playlists.forEach(p => {
+            if (!categories[p.category]) {
+                categories[p.category] = []
+            }
+            categories[p.category].push(p)
+        })
+
+        res.json({
+            event: {
+                title: '🎧 Spotify 특별전',
+                subtitle: '2026 New Year Special Collection',
+                description: 'Spotify의 엄선된 플레이리스트를 MusicSpace에서 만나보세요!'
+            },
+            stats: {
+                totalPlaylists: stats?.totalPlaylists || 0,
+                totalTracks: stats?.totalTracks || 0,
+                hotTracks: stats?.hotTracks || 0
+            },
+            categories,
+            hotTracks,
+            playlists
+        })
+    } catch (error) {
+        console.error('Error fetching Spotify special:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
 // 재생시간 포맷 헬퍼
 function formatDuration(seconds) {
     if (!seconds) return '0:00'
