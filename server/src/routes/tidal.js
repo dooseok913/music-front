@@ -580,23 +580,41 @@ export async function fetchTidalPlaylists(token, providedUserId = null) {
 
 export async function fetchTidalPlaylistTracks(token, playlistId, countryCode = 'KR') {
     try {
-        const response = await fetch(`${TIDAL_API_URL}/playlists/${playlistId}/items?limit=50&countryCode=${countryCode}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.tidal.v1+json'
-            }
-        })
+        let allItems = []
+        let offset = 0
+        const limit = 100 // Tidal max limit per request
+        let total = 0
 
-        if (!response.ok) {
-            if (response.status === 403 && countryCode !== 'US') {
-                console.warn(`[Tidal] 403 Forbidden for tracks in ${countryCode}, falling back to US...`)
-                return fetchTidalPlaylistTracks(token, playlistId, 'US')
-            }
-            throw new Error(`Failed to fetch tracks for ${playlistId}: ${response.status}`)
-        }
+        do {
+            console.log(`[Tidal] Fetching tracks for ${playlistId} (offset: ${offset})...`)
+            const response = await fetch(`${TIDAL_API_URL}/playlists/${playlistId}/items?limit=${limit}&offset=${offset}&countryCode=${countryCode}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.tidal.v1+json'
+                }
+            })
 
-        const data = await response.json()
-        return data.items || []
+            if (!response.ok) {
+                if (response.status === 403 && countryCode !== 'US') {
+                    console.warn(`[Tidal] 403 Forbidden for tracks in ${countryCode}, falling back to US...`)
+                    return fetchTidalPlaylistTracks(token, playlistId, 'US') // Retry with US
+                }
+                throw new Error(`Failed to fetch tracks for ${playlistId}: ${response.status}`)
+            }
+
+            const data = await response.json()
+            const items = data.items || []
+            allItems = allItems.concat(items)
+
+            total = data.totalNumberOfItems || items.length // Some endpoints might not return totalNumberOfItems
+            offset += items.length
+
+            if (items.length === 0) break // Safety break
+
+        } while (offset < total)
+
+        console.log(`[Tidal] Total tracks fetched: ${allItems.length}`)
+        return allItems
     } catch (error) {
         console.error('[Tidal] fetchTidalPlaylistTracks error:', error)
         return []

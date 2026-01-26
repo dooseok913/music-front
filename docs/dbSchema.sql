@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL COMMENT '비밀번호 해시',
     nickname VARCHAR(100) NOT NULL COMMENT '사용자 닉네임',
     user_role ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER' COMMENT '사용자 역할',
+    streaming_services JSON DEFAULT NULL COMMENT '연결된 스트리밍 서비스 목록',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '가입일시',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시'
 ) ENGINE=InnoDB COMMENT='사용자 회원가입 및 로그인 정보';
@@ -59,6 +60,10 @@ CREATE TABLE IF NOT EXISTS tracks (
     -- 메타데이터는 JSON으로 유연하게 저장 (플랫폼별 ID 등)
     external_metadata JSON COMMENT '외부 플랫폼별 상세 ID 및 메타데이터 (JSON)',
     
+    -- 오디오 특성 및 장르 (Metadata Enrichment)
+    genre VARCHAR(500) COMMENT '음악 장르 (쉼표로 구분)',
+    audio_features JSON COMMENT '오디오 특성 (Spotify/Last.fm - JSON)',
+    
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시'
 ) ENGINE=InnoDB COMMENT='전체 트랙 메타데이터 저장소';
 
@@ -75,7 +80,18 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
     INDEX idx_playlist_order (playlist_id, order_index)
 ) ENGINE=InnoDB COMMENT='플레이리스트와 트랙 간의 관계 정의';
 
--- 6. AI 분석/학습 로그 (Optional but recommended based on text)
+-- 6. 사용자 취향/로그 테이블
+CREATE TABLE IF NOT EXISTS user_track_ratings (
+    user_id BIGINT NOT NULL,
+    track_id BIGINT NOT NULL,
+    rating TINYINT NOT NULL COMMENT '1:좋아요, 0:보통, -1:싫어요',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, track_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (track_id) REFERENCES tracks(track_id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='사용자 트랙 평가 정보';
+
 CREATE TABLE IF NOT EXISTS ai_analysis_logs (
     log_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -85,19 +101,33 @@ CREATE TABLE IF NOT EXISTS ai_analysis_logs (
     analysis_result JSON COMMENT '상세 분석 결과',
     analyzed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-) ENGINE=InnoDB COMMENT='AI 취향 분석 및 검증 로그';
+) ENGINE=InnoDB COMMENT='AI 취향 분석 및 검증 로그 (Future Use)';
 
+-- 7. 장르 메타데이터 (For Signup Selection)
+CREATE TABLE IF NOT EXISTS music_genres (
+    genre_id INT AUTO_INCREMENT PRIMARY KEY,
+    genre_code VARCHAR(50) NOT NULL UNIQUE,
+    genre_name VARCHAR(100) NOT NULL
+) ENGINE=InnoDB COMMENT='표준 음악 장르 코드';
 
+CREATE TABLE IF NOT EXISTS user_genres (
+    user_id BIGINT NOT NULL,
+    genre_id INT NOT NULL,
+    preference_level INT DEFAULT 1 COMMENT '선호도 (1-5)',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, genre_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (genre_id) REFERENCES music_genres(genre_id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='사용자 선호 장르';
+
+-- 8. AI 분석 결과 테이블
 CREATE TABLE IF NOT EXISTS playlist_scored_id (
     playlist_id BIGINT NOT NULL COMMENT '플레이리스트 ID',
     user_id  BIGINT NOT NULL COMMENT '사용자 ID',
     ai_score DECIMAL(5, 2) DEFAULT 0.00 COMMENT 'AI 추천/검증 점수',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-	-- PK 설정: 한 사용자가 한 플레이리스트에 대해 중복 점수를 매기지 못하게 함
     PRIMARY KEY (playlist_id, user_id),
-    
-    -- 외래키 설정
     FOREIGN KEY (playlist_id) REFERENCES playlists(playlist_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
     ) ENGINE=InnoDB COMMENT='사용자별 플레이리스트 평가 점수';
@@ -108,10 +138,11 @@ CREATE TABLE IF NOT EXISTS track_scored_id (
     ai_score DECIMAL (5, 2) DEFAULT 0.00 COMMENT 'AI 추천/검증 점수',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-	-- PK 설정: 한 사용자가 한 트랙에 대해 중복 점수를 매기지 못하게 함
     PRIMARY KEY (track_id, user_id),
-    
-    -- 외래키 설정
     FOREIGN KEY (track_id) REFERENCES tracks(track_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
     ) ENGINE=InnoDB COMMENT='사용자별 트랙 평가 점수';
+
+-- Fix authentication plugin for mysql2 compatibility
+ALTER USER 'musicspace'@'%' IDENTIFIED WITH mysql_native_password BY 'musicspace123';
+FLUSH PRIVILEGES;

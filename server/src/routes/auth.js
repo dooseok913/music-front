@@ -12,7 +12,7 @@ const JWT_EXPIRES_IN = '7d'
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, streamingServices } = req.body
+        const { name, email, password, streamingServices, genres } = req.body
 
         // Validation
         if (!name || !email || !password) {
@@ -21,6 +21,11 @@ router.post('/register', async (req, res) => {
 
         if (password.length < 6) {
             return res.status(400).json({ error: '비밀번호는 최소 6자 이상이어야 합니다' })
+        }
+
+        // 장르 최소 1개 선택 확인
+        if (!genres || genres.length === 0) {
+            return res.status(400).json({ error: '최소 1개 이상의 음악 장르를 선택해주세요' })
         }
 
         // Check if email already exists
@@ -42,6 +47,28 @@ router.post('/register', async (req, res) => {
             [email, passwordHash, name, streamingServicesJson]
         )
 
+        // 사용자 선호 장르 저장
+        if (genres && genres.length > 0) {
+            for (const genreCode of genres) {
+                try {
+                    // 장르 ID 조회
+                    const genre = await queryOne(
+                        'SELECT genre_id FROM music_genres WHERE genre_code = ?',
+                        [genreCode]
+                    )
+                    if (genre) {
+                        await insert(
+                            'INSERT INTO user_genres (user_id, genre_id, preference_level) VALUES (?, ?, 1)',
+                            [userId, genre.genre_id]
+                        )
+                    }
+                } catch (genreError) {
+                    console.error(`Genre insert error for ${genreCode}:`, genreError.message)
+                    // 장르 저장 실패해도 회원가입은 계속 진행
+                }
+            }
+        }
+
         // Generate JWT
         const tokenToken = jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
 
@@ -51,7 +78,8 @@ router.post('/register', async (req, res) => {
                 id: userId,
                 email,
                 name,
-                streamingServices: streamingServices || []
+                streamingServices: streamingServices || [],
+                genres: genres || []
             },
             token: tokenToken
         })

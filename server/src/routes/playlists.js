@@ -226,64 +226,78 @@ async function fetchYoutubePlaylistTracks(playlistId) {
     if (!apiKey) return []
 
     try {
-        // Get playlist items
-        const itemsUrl = new URL(`${YOUTUBE_API_URL}/playlistItems`)
-        itemsUrl.searchParams.append('key', apiKey)
-        itemsUrl.searchParams.append('part', 'snippet,contentDetails')
-        itemsUrl.searchParams.append('playlistId', playlistId)
-        itemsUrl.searchParams.append('maxResults', '50')
+        let allItems = []
+        let nextPageToken = ''
+        const maxResults = 50 // YouTube max per request
 
-        const itemsRes = await fetch(itemsUrl.toString())
-        if (!itemsRes.ok) return []
-
-        const itemsData = await itemsRes.json()
-        if (!itemsData.items || itemsData.items.length === 0) return []
-
-        // Get video details for duration
-        const videoIds = itemsData.items
-            .map(item => item.contentDetails?.videoId)
-            .filter(Boolean)
-            .join(',')
-
-        if (!videoIds) return []
-
-        const videosUrl = new URL(`${YOUTUBE_API_URL}/videos`)
-        videosUrl.searchParams.append('key', apiKey)
-        videosUrl.searchParams.append('part', 'contentDetails,snippet')
-        videosUrl.searchParams.append('id', videoIds)
-
-        const videosRes = await fetch(videosUrl.toString())
-        if (!videosRes.ok) return itemsData.items.map((item, i) => ({
-            id: item.contentDetails?.videoId,
-            title: item.snippet.title,
-            artist: item.snippet.videoOwnerChannelTitle || 'Unknown',
-            duration: 0,
-            position: i
-        }))
-
-        const videosData = await videosRes.json()
-        const videoDetails = videosData.items.reduce((acc, video) => {
-            // Parse ISO 8601 duration
-            const match = video.contentDetails?.duration?.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
-            const duration = match
-                ? (parseInt(match[1] || 0) * 3600) + (parseInt(match[2] || 0) * 60) + (parseInt(match[3] || 0))
-                : 0
-            acc[video.id] = { duration, channelTitle: video.snippet?.channelTitle }
-            return acc
-        }, {})
-
-        return itemsData.items.map((item, i) => {
-            const videoId = item.contentDetails?.videoId
-            const details = videoDetails[videoId] || {}
-            return {
-                id: videoId,
-                title: item.snippet.title,
-                artist: details.channelTitle || item.snippet.videoOwnerChannelTitle || 'Unknown',
-                duration: details.duration || 0,
-                position: i,
-                thumbnail: item.snippet.thumbnails?.high?.url || ''
+        do {
+            // Get playlist items
+            const itemsUrl = new URL(`${YOUTUBE_API_URL}/playlistItems`)
+            itemsUrl.searchParams.append('key', apiKey)
+            itemsUrl.searchParams.append('part', 'snippet,contentDetails')
+            itemsUrl.searchParams.append('playlistId', playlistId)
+            itemsUrl.searchParams.append('maxResults', maxResults.toString())
+            if (nextPageToken) {
+                itemsUrl.searchParams.append('pageToken', nextPageToken)
             }
-        })
+
+            const itemsRes = await fetch(itemsUrl.toString())
+            if (!itemsRes.ok) break
+
+            const itemsData = await itemsRes.json()
+            const items = itemsData.items || []
+
+            if (items.length === 0) break
+
+            // Get video details for duration (batch for this page)
+            const videoIds = items
+                .map(item => item.contentDetails?.videoId)
+                .filter(Boolean)
+                .join(',')
+
+            let videoDetails = {}
+            if (videoIds) {
+                const videosUrl = new URL(`${YOUTUBE_API_URL}/videos`)
+                videosUrl.searchParams.append('key', apiKey)
+                videosUrl.searchParams.append('part', 'contentDetails,snippet')
+                videosUrl.searchParams.append('id', videoIds)
+
+                const videosRes = await fetch(videosUrl.toString())
+                if (videosRes.ok) {
+                    const videosData = await videosRes.json()
+                    videoDetails = videosData.items.reduce((acc, video) => {
+                        const match = video.contentDetails?.duration?.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+                        const duration = match
+                            ? (parseInt(match[1] || 0) * 3600) + (parseInt(match[2] || 0) * 60) + (parseInt(match[3] || 0))
+                            : 0
+                        acc[video.id] = { duration, channelTitle: video.snippet?.channelTitle }
+                        return acc
+                    }, {})
+                }
+            }
+
+            const processedItems = items.map((item, i) => {
+                const videoId = item.contentDetails?.videoId
+                const details = videoDetails[videoId] || {}
+                return {
+                    id: videoId,
+                    title: item.snippet.title,
+                    artist: details.channelTitle || item.snippet.videoOwnerChannelTitle || 'Unknown',
+                    duration: details.duration || 0,
+                    position: allItems.length + i, // Correct position across pages
+                    thumbnail: item.snippet.thumbnails?.high?.url || ''
+                }
+            })
+
+            allItems = allItems.concat(processedItems)
+            nextPageToken = itemsData.nextPageToken
+
+            console.log(`[YouTube] Fetched page, total so far: ${allItems.length}`)
+
+        } while (nextPageToken)
+
+        console.log(`[YouTube] Total tracks fetched: ${allItems.length}`)
+        return allItems
     } catch (error) {
         console.error('Error fetching YouTube tracks:', error)
         return []
@@ -351,6 +365,12 @@ router.post('/import', async (req, res) => {
                     `, [playlistId, trackId, track.position])
 
                     trackCount++
+
+                    // Background Enrichment (Fire & Forget)
+                    import('../services/metadataService.js').then(m => {
+                        m.default.enrichTrack(trackId, track.title, track.artist, null)
+                            .catch(e => console.error(`Enrichment failed for ${trackId}:`, e.message))
+                    })
                 } catch (e) {
                     console.error('Error inserting track:', e.message)
                 }
@@ -638,6 +658,27 @@ router.post('/seed', async (req, res) => {
                             VALUES (?, ?, ?, 'EMS', 'PTP', 'Platform', ?, ?)
                         `, [userId, p.title, `Tidal: ${p.description || 'Curated'}`, p.uuid, p.squareImage || null])
                         totalImported++
+
+                        // Note: Seed only inserts playlists, it doesn't fetch tracks yet? 
+                        // The original code passed `p.uuid` as external_id. 
+                        // Validating: The seed logic above inserts playlists but DOES NOT fetch tracks immediately.
+                        // The tracks are fetched when the user clicks/opens the playlist via GET /playlists/:id 
+                        // OR we should auto-fetch them here?
+                        // "Standard" behavior: just import playlist container. Tracks fetched on demand or via separate sync.
+                        // However, to enrich, we need tracks.
+                        // If seed only creates empty playlists, we can't enrich yet.
+                        // Checking `import` route: It fetches tracks immediately.
+                        // Checking `seed` route: It just inserts playlists.
+
+                        // So for `seed`, we can't enrich tracks because they aren't there.
+                        // But wait, the user said "Bring playlist and fill metadata".
+                        // Use case: Import playlist -> fetch tracks -> enrich.
+                        // My change in `import` handles the manual import case.
+                        // For `seed`, we might want to auto-fill tracks?
+                        // Ideally, we should fetch tracks for seeded playlists too if we want to enrich them.
+                        // But `seed` logic is currently simple.
+                        // I will leave seed as is (just container) and focus on `import` or `resync`.
+
                     } catch (e) {
                         if (!e.message?.includes('Duplicate')) errors.push(`Tidal: ${e.message}`)
                     }

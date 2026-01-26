@@ -8,6 +8,10 @@ import playlistRoutes from './routes/playlists.js'
 import analysisRoutes from './routes/analysis.js'
 import itunesRoutes from './routes/itunes.js'
 import youtubeRoutes from './routes/youtube.js'
+import trainingRoutes from './routes/training.js'
+import emsRoutes from './routes/ems.js'
+import pmsRoutes from './routes/pms.js'
+import genresRoutes from './routes/genres.js'
 
 dotenv.config()
 
@@ -59,6 +63,10 @@ app.use('/api/playlists', playlistRoutes)
 app.use('/api/analysis', analysisRoutes)
 app.use('/api/itunes', itunesRoutes)
 app.use('/api/youtube', youtubeRoutes)
+app.use('/api/training', trainingRoutes)
+app.use('/api/ems', emsRoutes)
+app.use('/api/pms', pmsRoutes)
+app.use('/api/genres', genresRoutes)
 
 // Error handling
 app.use((err, req, res, next) => {
