@@ -71,7 +71,7 @@ docker compose up -d
 
 ```bash
 # 컨테이너 이름: musicspace-db
-docker exec -i musicspace-db mysql -u musicspace -pmusicspace123 music_space_db < music_space_db_dump.sql
+docker exec -i musicspace-db mariadb -u musicspace -pmusicspace123 music_space_db < music_space_db_dump.sql
 ```
 
 ## 4. 백엔드 서버 실행
