@@ -5,6 +5,7 @@ import { playlistsApi, Playlist } from '../../services/api/playlists'
 import { tidalApi } from '../../services/api/tidal'
 import { itunesService } from '../../services/api/itunes'
 import { youtubeApi } from '../../services/api/youtube'
+import { statsApi, BestArtist, BestPlaylist, BestTrack, BestAlbum } from '../../services/api/stats'
 import { useAuth } from '../../contexts/AuthContext'
 
 interface HomeStats {
@@ -30,6 +31,12 @@ const MusicHome = () => {
     const [tidalTracks, setTidalTracks] = useState<TopTrack[]>([])
     const [youtubeTracks, setYoutubeTracks] = useState<TopTrack[]>([])
     const [appleTracks, setAppleTracks] = useState<TopTrack[]>([])
+
+    // Best stats
+    const [bestArtists, setBestArtists] = useState<BestArtist[]>([])
+    const [bestPlaylists, setBestPlaylists] = useState<BestPlaylist[]>([])
+    const [bestTracks, setBestTracks] = useState<BestTrack[]>([])
+    const [bestAlbums, setBestAlbums] = useState<BestAlbum[]>([])
 
     // Helper to get random items
     const getRandomItems = (arr: any[], count: number) => {
@@ -75,7 +82,7 @@ const MusicHome = () => {
             })
 
             // 3. Load platform top tracks (Real Data)
-            
+
             // Tidal: Use Featured Playlists
             try {
                 const tidalFeatured = await tidalApi.getFeatured()
@@ -105,16 +112,16 @@ const MusicHome = () => {
                 // Search for global hits or specific genre
                 const itunesResults = await itunesService.search('Global Top 100')
                 // Randomize to make it look dynamic or take top 5
-                const selected = itunesResults.slice(0, 5) 
-                
+                const selected = itunesResults.slice(0, 5)
+
                 if (selected.length > 0) {
                     setAppleTracks(selected.map(t => ({
                         title: t.title,
                         artist: t.artist
                     })))
                 } else {
-                     // Fallback
-                     setAppleTracks([
+                    // Fallback
+                    setAppleTracks([
                         { title: 'Vampire', artist: 'Olivia Rodrigo' },
                         { title: 'Cruel Summer', artist: 'Taylor Swift' },
                         { title: 'Anti-Hero', artist: 'Taylor Swift' },
@@ -128,16 +135,9 @@ const MusicHome = () => {
 
             // YouTube Music: Use YouTube API Search (or fallback)
             try {
-                // Since we don't have a direct "Chart" API without quota heavy usage, 
-                // we search for a popular playlist and take items
                 const ytResponse = await youtubeApi.searchPlaylists('Billboard Hot 100')
                 if (ytResponse.playlists.length > 0) {
-                    // We can't get tracks directly from search result, so we use placeholder or fetch details if we implemented getPlaylistItems
-                    // For now, let's keep using a curated list or better yet, search for "Popular Music" video results if we had that API
-                    
-                    // Fallback to static list for now as getting tracks from playlist requires another API call
-                    // We'll update this when we add `getPlaylistItems` to youtubeApi
-                     setYoutubeTracks([
+                    setYoutubeTracks([
                         { title: 'Seven (feat. Latto)', artist: 'Jung Kook' },
                         { title: 'Super Shy', artist: 'NewJeans' },
                         { title: 'Vampire', artist: 'Olivia Rodrigo' },
@@ -147,6 +147,22 @@ const MusicHome = () => {
                 }
             } catch (e) {
                 console.log('YouTube tracks fetch failed:', e)
+            }
+
+            // 4. Load best stats from our DB
+            try {
+                const [artistsRes, playlistsRes, tracksRes, albumsRes] = await Promise.all([
+                    statsApi.getBestArtists(5),
+                    statsApi.getBestPlaylists(3),
+                    statsApi.getBestTracks(5),
+                    statsApi.getBestAlbums(3)
+                ])
+                setBestArtists(artistsRes.artists || [])
+                setBestPlaylists(playlistsRes.playlists || [])
+                setBestTracks(tracksRes.tracks || [])
+                setBestAlbums(albumsRes.albums || [])
+            } catch (e) {
+                console.log('Best stats fetch failed:', e)
             }
 
         } catch (err) {
@@ -172,9 +188,6 @@ const MusicHome = () => {
             setSeeding(false)
         }
     }
-
-    // Get top artists from playlists
-    const topArtists = ['IU', 'BTS', 'NewJeans', 'Aespa', 'BLACKPINK']
 
     // Get recommended playlists (top 3 from GMS or PMS)
     const recommendedPlaylists = [...gmsPlaylists, ...pmsPlaylists]
@@ -301,20 +314,34 @@ const MusicHome = () => {
                 <section className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-hud-text-primary flex items-center gap-2">
-                            <Users className="w-5 h-5 text-hud-accent-primary" /> 베스트 아티스트
+                            <Users className="w-5 h-5 text-hud-accent-primary" /> 인기 아티스트
                         </h2>
                         <a href="#" className="text-hud-accent-primary text-sm flex items-center gap-1 hover:underline">
                             전체보기 <ArrowRight className="w-4 h-4" />
                         </a>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                        {['IU', 'BTS', 'NewJeans', 'Aespa', 'BLACKPINK'].map((artist, idx) => (
-                            <div key={artist} className="hud-card hud-card-bottom rounded-xl p-4 text-center hover:scale-105 transition-transform cursor-pointer">
-                                <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-hud-accent-secondary to-hud-accent-primary rounded-full flex items-center justify-center text-white font-bold text-xl">
-                                    {artist.charAt(0)}
+                        {(bestArtists.length > 0 ? bestArtists : [
+                            { name: 'IU', playCount: 0, viewCount: 0, likeCount: 0, image: undefined },
+                            { name: 'BTS', playCount: 0, viewCount: 0, likeCount: 0, image: undefined },
+                            { name: 'NewJeans', playCount: 0, viewCount: 0, likeCount: 0, image: undefined },
+                            { name: 'Aespa', playCount: 0, viewCount: 0, likeCount: 0, image: undefined },
+                            { name: 'BLACKPINK', playCount: 0, viewCount: 0, likeCount: 0, image: undefined }
+                        ]).map((artist, idx) => (
+                            <div key={artist.name} className="hud-card hud-card-bottom rounded-xl p-4 text-center hover:scale-105 transition-transform cursor-pointer group">
+                                <div className="w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden border-2 border-hud-bg-secondary shadow-lg relative">
+                                    {artist.image ? (
+                                        <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-hud-accent-secondary to-hud-accent-primary flex items-center justify-center text-white font-bold text-xl">
+                                            {artist.name.charAt(0)}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="font-medium text-hud-text-primary text-sm">{artist}</div>
-                                <div className="text-xs text-hud-text-muted">#{idx + 1}</div>
+                                <div className="font-medium text-hud-text-primary text-sm truncate px-2">{artist.name}</div>
+                                <div className="text-xs text-hud-text-muted">
+                                    {artist.playCount > 0 ? `${artist.playCount.toLocaleString()} plays` : `#${idx + 1}`}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -349,6 +376,66 @@ const MusicHome = () => {
                         ))}
                     </div>
                 </section>
+
+                {/* Platform Playlists */}
+                {gmsPlaylists.length > 0 && (
+                    <section className="mb-8">
+                        <h2 className="text-xl font-bold text-hud-text-primary flex items-center gap-2 mb-4">
+                            <Disc className="w-5 h-5 text-hud-accent-info" /> 플랫폼 추천 플레이리스트
+                        </h2>
+                        <div className="grid gap-6">
+                            {[
+                                { name: 'Tidal', label: 'Tidal에서 지금 핫한', prefix: 'tidal_', color: 'from-blue-500 to-cyan-400', borderColor: 'border-blue-500' },
+                                { name: 'Apple Music', label: 'Apple Music 인기 앨범', prefix: 'itunes_', color: 'from-pink-500 to-rose-500', borderColor: 'border-pink-500' },
+                                { name: 'Spotify', label: 'Spotify 추천 플리', prefix: 'spotify_', color: 'from-green-500 to-emerald-400', borderColor: 'border-green-500' },
+                                { name: 'YouTube', label: 'YouTube 뮤직 Pick', prefix: 'youtube_', color: 'from-red-500 to-red-600', borderColor: 'border-red-500' },
+                            ].map((platform) => {
+                                const allPlatformPlaylists = gmsPlaylists.filter(p => p.externalId?.startsWith(platform.prefix))
+                                // 랜덤으로 5개 선택
+                                const platformPlaylists = getRandomItems(allPlatformPlaylists, 5)
+                                if (platformPlaylists.length === 0) return null
+                                return (
+                                    <div key={platform.name} className={`hud-card hud-card-bottom rounded-xl overflow-hidden border-l-4 ${platform.borderColor}`}>
+                                        <div className={`bg-gradient-to-r ${platform.color} px-4 py-3 text-white font-semibold flex items-center gap-2`}>
+                                            <Disc className="w-5 h-5" />
+                                            {platform.label}
+                                        </div>
+                                        <div className="p-4">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                                                {platformPlaylists.map((playlist) => (
+                                                    <Link
+                                                        key={playlist.id}
+                                                        to={`/music/lab`}
+                                                        className="group cursor-pointer"
+                                                    >
+                                                        <div className="aspect-square bg-hud-bg-secondary rounded-lg overflow-hidden mb-2 relative">
+                                                            {playlist.coverImage ? (
+                                                                <img
+                                                                    src={playlist.coverImage}
+                                                                    alt={playlist.title}
+                                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                                />
+                                                            ) : (
+                                                                <div className={`w-full h-full bg-gradient-to-br ${platform.color} flex items-center justify-center`}>
+                                                                    <Music className="w-8 h-8 text-white/70" />
+                                                                </div>
+                                                            )}
+                                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <Play className="w-8 h-8 text-white" fill="white" />
+                                                            </div>
+                                                        </div>
+                                                        <h4 className="text-sm font-medium text-hud-text-primary truncate">{playlist.title}</h4>
+                                                        <p className="text-xs text-hud-text-muted truncate">{playlist.description}</p>
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </section>
+                )}
 
                 {/* Recommended Playlists */}
                 <section className="mb-8">
@@ -417,31 +504,40 @@ const MusicHome = () => {
                     <h2 className="text-xl font-bold text-hud-accent-warning flex items-center gap-2 mb-6">
                         <Crown className="w-6 h-6" /> BEST OF BEST
                     </h2>
-                    <div className="grid sm:grid-cols-3 gap-6">
+                    <div className="grid sm:grid-cols-4 gap-6">
                         {[
                             {
                                 type: '플레이리스트',
-                                name: [...pmsPlaylists, ...gmsPlaylists, ...emsPlaylists].sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0))[0]?.title || 'K-POP Hits 2024',
-                                sub: `${[...pmsPlaylists, ...gmsPlaylists, ...emsPlaylists].sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0))[0]?.trackCount || 0} tracks`
-                            },
-                            {
-                                type: '앨범',
-                                name: appleTracks[0]?.title || 'The Astronaut',
-                                sub: appleTracks[0]?.artist || 'Jin'
+                                name: bestPlaylists[0]?.title || [...pmsPlaylists, ...gmsPlaylists, ...emsPlaylists][0]?.title || 'K-POP Hits',
+                                sub: bestPlaylists[0] ? `${bestPlaylists[0].playCount.toLocaleString()} plays` : `${[...pmsPlaylists, ...gmsPlaylists, ...emsPlaylists][0]?.trackCount || 0} tracks`,
+                                icon: Disc
                             },
                             {
                                 type: '트랙',
-                                name: tidalTracks[0]?.title || 'Super Shy',
-                                sub: tidalTracks[0]?.artist || 'NewJeans'
+                                name: bestTracks[0]?.title || tidalTracks[0]?.title || 'Super Shy',
+                                sub: bestTracks[0] ? `${bestTracks[0].playCount.toLocaleString()} plays` : (tidalTracks[0]?.artist || 'NewJeans'),
+                                icon: Music
+                            },
+                            {
+                                type: '앨범',
+                                name: bestAlbums[0]?.title || appleTracks[0]?.title || 'The Astronaut',
+                                sub: bestAlbums[0] ? `${bestAlbums[0].playCount.toLocaleString()} plays` : (appleTracks[0]?.artist || 'Jin'),
+                                icon: Disc
+                            },
+                            {
+                                type: '아티스트',
+                                name: bestArtists[0]?.name || 'NewJeans',
+                                sub: bestArtists[0] ? `${bestArtists[0].playCount.toLocaleString()} plays` : '#1',
+                                icon: Users
                             },
                         ].map((item) => (
                             <div key={item.type} className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-gradient-to-br from-hud-accent-warning to-orange-400 rounded-xl flex items-center justify-center">
-                                    <Crown className="w-8 h-8 text-white" />
+                                <div className="w-14 h-14 bg-gradient-to-br from-hud-accent-warning to-orange-400 rounded-xl flex items-center justify-center">
+                                    <item.icon className="w-7 h-7 text-white" />
                                 </div>
-                                <div>
+                                <div className="flex-1 min-w-0">
                                     <div className="text-xs text-hud-accent-warning font-semibold uppercase">{item.type}</div>
-                                    <div className="font-semibold text-hud-text-primary truncate max-w-[150px]">{item.name}</div>
+                                    <div className="font-semibold text-hud-text-primary truncate">{item.name}</div>
                                     <div className="text-sm text-hud-text-muted">{item.sub}</div>
                                 </div>
                             </div>

@@ -2,6 +2,7 @@ import { Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2, List, Music, Pau
 import { useState, useRef, useEffect } from 'react'
 import { useMusic } from '../../context/MusicContext'
 import { audioService } from '../../services/audio/AudioService'
+import { statsApi } from '../../services/api/stats'
 import ReactPlayer from 'react-player'
 
 const MusicPlayer = () => {
@@ -38,6 +39,28 @@ const MusicPlayer = () => {
         const secs = Math.floor(seconds % 60)
         return `${mins}:${secs.toString().padStart(2, '0')}`
     }
+
+    // Record play count
+    useEffect(() => {
+        if (isPlaying && currentTrack) {
+            // Debounce or ensure single call per track play session could be improved here, 
+            // but for now we record when playing starts for a new track.
+            // A robust solution might need a 'hasRecorded' state reset on track change.
+            const recordStats = async () => {
+                try {
+                    // Assuming 'track' type for now, but could be extended
+                    await statsApi.recordPlay('track', currentTrack.id, currentTrack.artist)
+                    console.log(`[Stats] Recorded play for: ${currentTrack.title}`)
+                } catch (e) {
+                    console.error('[Stats] Failed to record play:', e)
+                }
+            }
+
+            // Allow a small delay to ensure it's not just a skip
+            const timer = setTimeout(recordStats, 5000)
+            return () => clearTimeout(timer)
+        }
+    }, [currentTrack?.id, isPlaying])
 
     if (!currentTrack) {
         return null
@@ -89,7 +112,7 @@ const MusicPlayer = () => {
                     <button className="w-8 h-8 rounded-full flex items-center justify-center text-hud-text-muted hover:text-hud-accent-primary transition-colors">
                         <Shuffle className="w-4 h-4" />
                     </button>
-                    <button 
+                    <button
                         onClick={playPrevious}
                         className="w-8 h-8 rounded-full flex items-center justify-center text-hud-text-secondary hover:text-hud-accent-primary transition-colors">
                         <SkipBack className="w-4 h-4" />
@@ -107,7 +130,7 @@ const MusicPlayer = () => {
                             <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
                         )}
                     </button>
-                    <button 
+                    <button
                         onClick={playNext}
                         className="w-8 h-8 rounded-full flex items-center justify-center text-hud-text-secondary hover:text-hud-accent-primary transition-colors">
                         <SkipForward className="w-4 h-4" />

@@ -1,6 +1,7 @@
 import express from 'express'
 import { query, queryOne, insert, execute } from '../config/db.js'
 import { optionalAuth } from '../middleware/auth.js'
+import { downloadPlaylistCover, downloadTrackArtwork } from '../utils/imageDownloader.js'
 import fs from 'fs'
 import path from 'path'
 
@@ -16,8 +17,9 @@ router.get('/', optionalAuth, async (req, res) => {
             userId = req.user.userId
         }
 
-        // If userId is not provided (or extracted from token), return empty to avoid leaking other users' data
-        if (!userId) {
+        // GMS (Global Music Space) is public - allow fetching without authentication
+        // For PMS/EMS, require userId to avoid leaking other users' data
+        if (!userId && spaceType !== 'GMS') {
             return res.json({ playlists: [], total: 0 })
         }
 
@@ -35,7 +37,7 @@ router.get('/', optionalAuth, async (req, res) => {
         console.log(`[Playlists] Fetching for userId: ${userId}, spaceType: ${spaceType || 'ALL'}, status: ${status || 'ALL'}`)
 
         let sql = `
-            SELECT 
+            SELECT
                 p.playlist_id as id,
                 p.title,
                 p.description,
@@ -50,13 +52,23 @@ router.get('/', optionalAuth, async (req, res) => {
                 COALESCE(psi.ai_score, 0) as aiScore
             FROM playlists p
             LEFT JOIN playlist_scored_id psi ON p.playlist_id = psi.playlist_id AND psi.user_id = p.user_id
-            WHERE p.user_id = ?
         `
-        const params = [userId]
+        const params = []
 
-        if (spaceType) {
-            sql += ' AND p.space_type = ?'
-            params.push(spaceType)
+        // For GMS, show all public playlists; for other spaces, filter by user
+        if (spaceType === 'GMS') {
+            sql += ' WHERE p.space_type = ?'
+            params.push('GMS')
+        } else if (userId) {
+            sql += ' WHERE p.user_id = ?'
+            params.push(userId)
+            // Add spaceType filter for non-GMS queries
+            if (spaceType) {
+                sql += ' AND p.space_type = ?'
+                params.push(spaceType)
+            }
+        } else {
+            sql += ' WHERE 1=0' // No results if no userId and not GMS
         }
 
         if (status) {
@@ -71,13 +83,11 @@ router.get('/', optionalAuth, async (req, res) => {
         // Process image URLs
         const processedPlaylists = playlists.map(p => {
             let image = p.coverImage
-            if (p.sourceType === 'Platform' && p.externalId && !image?.startsWith('http')) {
+            // Only convert Tidal UUID images (not local paths or HTTP URLs)
+            if (p.externalId?.startsWith('tidal_') && image && !image.startsWith('http') && !image.startsWith('/')) {
                 // Tidal Image Logic: resources.tidal.com/images/{uuid}/640x640.jpg
-                // UUID requires '-' replaced by '/'
-                if (image) {
-                    const tidalPath = image.replace(/-/g, '/')
-                    image = `https://resources.tidal.com/images/${tidalPath}/640x640.jpg`
-                }
+                const tidalPath = image.replace(/-/g, '/')
+                image = `https://resources.tidal.com/images/${tidalPath}/640x640.jpg`
             }
             return { ...p, coverImage: image }
         })
@@ -200,8 +210,17 @@ router.post('/', async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `, [userId, title, description, spaceType, status, sourceType, externalId, coverImage])
 
+        // 이미지 다운로드 (비동기, 실패해도 계속 진행)
+        if (coverImage?.startsWith('http')) {
+            downloadPlaylistCover(coverImage, playlistId).then(localPath => {
+                if (localPath !== coverImage) {
+                    execute('UPDATE playlists SET cover_image = ? WHERE playlist_id = ?', [localPath, playlistId])
+                }
+            }).catch(() => {})
+        }
+
         const playlist = await queryOne(`
-            SELECT 
+            SELECT
                 playlist_id as id,
                 title,
                 description,
@@ -339,6 +358,15 @@ router.post('/import', async (req, res) => {
             VALUES (?, ?, ?, 'EMS', 'PTP', 'Platform', ?, ?)
         `, [userId, title, description, platformPlaylistId, coverImage])
 
+        // 플레이리스트 커버 이미지 다운로드
+        if (coverImage?.startsWith('http')) {
+            downloadPlaylistCover(coverImage, playlistId).then(localPath => {
+                if (localPath !== coverImage) {
+                    execute('UPDATE playlists SET cover_image = ? WHERE playlist_id = ?', [localPath, playlistId])
+                }
+            }).catch(() => {})
+        }
+
         // Fetch and import tracks for YouTube
         let trackCount = 0
         if (platform === 'YouTube') {
@@ -357,6 +385,22 @@ router.post('/import', async (req, res) => {
                         track.duration,
                         JSON.stringify({ youtubeId: track.id, thumbnail: track.thumbnail })
                     ])
+
+                    // 트랙 썸네일 이미지 다운로드
+                    if (track.thumbnail?.startsWith('http')) {
+                        downloadTrackArtwork(track.thumbnail, trackId).then(localPath => {
+                            if (localPath !== track.thumbnail) {
+                                queryOne('SELECT external_metadata FROM tracks WHERE track_id = ?', [trackId]).then(row => {
+                                    if (row) {
+                                        const meta = JSON.parse(row.external_metadata || '{}')
+                                        meta.thumbnail = localPath
+                                        meta.artwork = localPath
+                                        execute('UPDATE tracks SET external_metadata = ? WHERE track_id = ?', [JSON.stringify(meta), trackId])
+                                    }
+                                })
+                            }
+                        }).catch(() => {})
+                    }
 
                     // Link to playlist
                     await insert(`
@@ -422,6 +466,15 @@ router.post('/import-album', async (req, res) => {
             VALUES (?, ?, ?, 'EMS', 'PTP', 'Platform', ?)
         `, [userId, title, `Album by ${artist} (Apple Music)`, coverImage])
 
+        // 플레이리스트 커버 이미지 다운로드
+        if (coverImage?.startsWith('http')) {
+            downloadPlaylistCover(coverImage, playlistId).then(localPath => {
+                if (localPath !== coverImage) {
+                    execute('UPDATE playlists SET cover_image = ? WHERE playlist_id = ?', [localPath, playlistId])
+                }
+            }).catch(() => {})
+        }
+
         // Insert tracks
         let trackCount = 0
         for (let i = 0; i < tracks.length; i++) {
@@ -444,6 +497,21 @@ router.post('/import-album', async (req, res) => {
                     track.duration || 0,
                     JSON.stringify(metadata)
                 ])
+
+                // 트랙 아트워크 이미지 다운로드
+                if (track.artwork?.startsWith('http')) {
+                    downloadTrackArtwork(track.artwork, trackId).then(localPath => {
+                        if (localPath !== track.artwork) {
+                            queryOne('SELECT external_metadata FROM tracks WHERE track_id = ?', [trackId]).then(row => {
+                                if (row) {
+                                    const meta = JSON.parse(row.external_metadata || '{}')
+                                    meta.artwork = localPath
+                                    execute('UPDATE tracks SET external_metadata = ? WHERE track_id = ?', [JSON.stringify(meta), trackId])
+                                }
+                            })
+                        }
+                    }).catch(() => {})
+                }
 
                 await insert(`
                     INSERT INTO playlist_tracks (playlist_id, track_id, order_index)
@@ -582,6 +650,21 @@ router.post('/:id/tracks', async (req, res) => {
             JSON.stringify(metadata)
         ])
 
+        // 트랙 아트워크 이미지 다운로드
+        if (track.artwork?.startsWith('http')) {
+            downloadTrackArtwork(track.artwork, trackId).then(localPath => {
+                if (localPath !== track.artwork) {
+                    queryOne('SELECT external_metadata FROM tracks WHERE track_id = ?', [trackId]).then(row => {
+                        if (row) {
+                            const meta = JSON.parse(row.external_metadata || '{}')
+                            meta.artwork = localPath
+                            execute('UPDATE tracks SET external_metadata = ? WHERE track_id = ?', [JSON.stringify(meta), trackId])
+                        }
+                    })
+                }
+            }).catch(() => {})
+        }
+
         // 2. Add to Playlist
         const lastTrack = await queryOne(
             `SELECT MAX(order_index) as maxOrder FROM playlist_tracks WHERE playlist_id = ?`,
@@ -653,10 +736,19 @@ router.post('/seed', async (req, res) => {
 
                 for (const p of featuredPlaylists.slice(0, 10)) {
                     try {
-                        await insert(`
+                        const playlistId = await insert(`
                             INSERT INTO playlists (user_id, title, description, space_type, status_flag, source_type, external_id, cover_image)
                             VALUES (?, ?, ?, 'EMS', 'PTP', 'Platform', ?, ?)
                         `, [userId, p.title, `Tidal: ${p.description || 'Curated'}`, p.uuid, p.squareImage || null])
+
+                        // 이미지 다운로드
+                        if (p.squareImage?.startsWith('http')) {
+                            downloadPlaylistCover(p.squareImage, playlistId).then(localPath => {
+                                if (localPath !== p.squareImage) {
+                                    execute('UPDATE playlists SET cover_image = ? WHERE playlist_id = ?', [localPath, playlistId])
+                                }
+                            }).catch(() => {})
+                        }
                         totalImported++
 
                         // Note: Seed only inserts playlists, it doesn't fetch tracks yet? 
@@ -706,10 +798,19 @@ router.post('/seed', async (req, res) => {
 
                         for (const album of albums.slice(0, 2)) {
                             try {
-                                await insert(`
+                                const playlistId = await insert(`
                                     INSERT INTO playlists (user_id, title, description, space_type, status_flag, source_type, external_id, cover_image)
                                     VALUES (?, ?, ?, 'EMS', 'PTP', 'Platform', ?, ?)
                                 `, [userId, album.title, `Apple Music: ${album.artist}`, `itunes_${album.id}`, album.artwork || null])
+
+                                // 이미지 다운로드
+                                if (album.artwork?.startsWith('http')) {
+                                    downloadPlaylistCover(album.artwork, playlistId).then(localPath => {
+                                        if (localPath !== album.artwork) {
+                                            execute('UPDATE playlists SET cover_image = ? WHERE playlist_id = ?', [localPath, playlistId])
+                                        }
+                                    }).catch(() => {})
+                                }
                                 totalImported++
                                 console.log(`[Seed] Imported: ${album.title}`)
                             } catch (e) {

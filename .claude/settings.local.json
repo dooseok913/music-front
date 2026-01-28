@@ -6,7 +6,8 @@
       "Bash(curl:*)",
       "Bash(node -e:*)",
       "Bash(pip show:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(node:*)"
     ]
   }
 }

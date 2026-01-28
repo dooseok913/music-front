@@ -1,7 +1,12 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { testConnection, queryOne, insert } from './config/db.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 import authRoutes from './routes/auth.js'
 import tidalRoutes from './routes/tidal.js'
 import playlistRoutes from './routes/playlists.js'
@@ -12,6 +17,7 @@ import trainingRoutes from './routes/training.js'
 import emsRoutes from './routes/ems.js'
 import pmsRoutes from './routes/pms.js'
 import genresRoutes from './routes/genres.js'
+import statsRoutes from './routes/stats.js'
 
 dotenv.config()
 
@@ -51,6 +57,9 @@ app.use(cors({
 }))
 app.use(express.json())
 
+// 정적 파일 서빙 (이미지)
+app.use('/images', express.static(path.join(__dirname, '../../public/images')))
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() })
@@ -67,6 +76,7 @@ app.use('/api/training', trainingRoutes)
 app.use('/api/ems', emsRoutes)
 app.use('/api/pms', pmsRoutes)
 app.use('/api/genres', genresRoutes)
+app.use('/api/stats', statsRoutes)
 
 // Error handling
 app.use((err, req, res, next) => {

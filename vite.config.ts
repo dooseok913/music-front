@@ -19,6 +19,11 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false
             },
+            '/images': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+                secure: false
+            },
             '/apple-proxy': {
                 target: 'https://amp-api-edge.music.apple.com/v1',
                 changeOrigin: true,

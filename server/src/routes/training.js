@@ -1,6 +1,7 @@
 import express from 'express'
 import { query, queryOne } from '../config/db.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { downloadArtistImage } from '../utils/imageDownloader.js'
 
 const router = express.Router()
 
@@ -881,6 +882,140 @@ router.get('/ml-dataset', async (req, res) => {
         })
     } catch (error) {
         console.error('Error generating ML dataset:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+// Spotify에서 아티스트 이미지 가져오기 Helper
+async function fetchSpotifyArtistImage(artistName) {
+    try {
+        const token = await getSpotifyToken()
+        const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        const data = await response.json()
+
+        if (data.artists?.items?.length > 0) {
+            const artist = data.artists.items[0]
+            if (artist.images?.length > 0) {
+                return {
+                    imageUrl: artist.images[0].url, // 가장 큰 이미지
+                    spotifyId: artist.id,
+                    genres: artist.genres,
+                    popularity: artist.popularity,
+                    followers: artist.followers?.total
+                }
+            }
+        }
+        return null
+    } catch (error) {
+        console.error(`Error fetching image for ${artistName}:`, error)
+        return null
+    }
+}
+
+// POST /api/training/collect-artist-images - 아티스트 이미지 수집
+router.post('/collect-artist-images', async (req, res) => {
+    try {
+        const { limit = 20, forceUpdate = false } = req.body
+
+        // 1. 이미지가 없는 아티스트 조회
+        let queryStr = `SELECT artist_id, name FROM artists`
+        if (!forceUpdate) {
+            queryStr += ` WHERE image_url IS NULL OR image_url = ''`
+        }
+        queryStr += ` ORDER BY artist_id DESC LIMIT ${parseInt(limit)}`
+
+        const artists = await query(queryStr)
+
+        const results = { success: 0, failed: 0, updated: [] }
+
+        for (const artist of artists) {
+            const info = await fetchSpotifyArtistImage(artist.name)
+
+            if (info) {
+                // 로컬에 이미지 다운로드
+                const localImagePath = await downloadArtistImage(info.imageUrl, artist.artist_id, artist.name)
+
+                await query(`
+                    UPDATE artists SET
+                        image_url = ?,
+                        spotify_id = COALESCE(spotify_id, ?),
+                        genres = COALESCE(genres, ?),
+                        popularity = COALESCE(popularity, ?),
+                        followers = COALESCE(followers, ?)
+                    WHERE artist_id = ?
+                `, [
+                    localImagePath,
+                    info.spotifyId,
+                    JSON.stringify(info.genres),
+                    info.popularity,
+                    info.followers,
+                    artist.artist_id
+                ])
+                results.success++
+                results.updated.push({ name: artist.name, image: localImagePath })
+            } else {
+                results.failed++
+            }
+
+            // Rate limiting
+            await new Promise(r => setTimeout(r, 100))
+        }
+
+        // 2. artist_stats에는 있지만 artists 테이블에 없는 아티스트 동기화
+        if (artists.length < parseInt(limit)) {
+            const missingArtists = await query(`
+                SELECT DISTINCT ast.artist_name 
+                FROM artist_stats ast
+                LEFT JOIN artists a ON ast.artist_name = a.name
+                WHERE a.artist_id IS NULL
+                ORDER BY ast.play_count DESC
+                LIMIT ${parseInt(limit) - artists.length}
+            `)
+
+            for (const miss of missingArtists) {
+                const info = await fetchSpotifyArtistImage(miss.artist_name)
+                if (info) {
+                    // INSERT 또는 UPDATE (spotify_id 중복 시)
+                    const insertResult = await query(`
+                        INSERT INTO artists (name, spotify_id, genres, popularity, followers)
+                        VALUES (?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                            name = VALUES(name),
+                            genres = COALESCE(genres, VALUES(genres)),
+                            popularity = COALESCE(popularity, VALUES(popularity)),
+                            followers = COALESCE(followers, VALUES(followers))
+                    `, [
+                        miss.artist_name,
+                        info.spotifyId,
+                        JSON.stringify(info.genres),
+                        info.popularity,
+                        info.followers
+                    ])
+
+                    // 아티스트 ID 조회 (새로 삽입 또는 기존)
+                    let artistId = insertResult.insertId
+                    if (!artistId || artistId === 0) {
+                        const existing = await queryOne(`SELECT artist_id FROM artists WHERE spotify_id = ?`, [info.spotifyId])
+                        artistId = existing?.artist_id
+                    }
+
+                    if (artistId) {
+                        // 로컬에 이미지 다운로드
+                        const localImagePath = await downloadArtistImage(info.imageUrl, artistId, miss.artist_name)
+                        await query(`UPDATE artists SET image_url = ? WHERE artist_id = ?`, [localImagePath, artistId])
+                        results.success++
+                        results.updated.push({ name: miss.artist_name, image: localImagePath, isNew: true })
+                    }
+                }
+                await new Promise(r => setTimeout(r, 100))
+            }
+        }
+
+        res.json(results)
+    } catch (error) {
+        console.error('Error collecting artist images:', error)
         res.status(500).json({ error: error.message })
     }
 })
