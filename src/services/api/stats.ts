@@ -43,7 +43,18 @@ export interface BestAlbum {
     trackCount: number
 }
 
+export interface HomeStats {
+    totalPlaylists: number
+    totalTracks: number
+    aiPending: number
+    likes: number
+}
+
 export const statsApi = {
+    // 홈 통계 (실 데이터)
+    getHomeStats: () =>
+        get<HomeStats>('/stats/home'),
+
     // 조회수 기록
     recordView: (contentType: 'playlist' | 'track' | 'album' | 'artist', contentId?: number, artistName?: string) =>
         post<{ success: boolean }>('/stats/view', { contentType, contentId, artistName }),

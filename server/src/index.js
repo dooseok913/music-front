@@ -58,7 +58,9 @@ app.use(cors({
 app.use(express.json())
 
 // 정적 파일 서빙 (이미지)
-app.use('/images', express.static(path.join(__dirname, '../../public/images')))
+// Docker: /app/public/images, Local: ../public/images
+const imagesPath = process.env.IMAGES_PATH || path.join(__dirname, '../../public/images')
+app.use('/images', express.static(imagesPath))
 
 // Health check
 app.get('/api/health', (req, res) => {

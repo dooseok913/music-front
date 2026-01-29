@@ -7,8 +7,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# 소스 복사 및 빌드
+# 소스 복사
 COPY . .
+
+# Docker 환경에서는 /api로 요청 (nginx 프록시 사용)
+ENV VITE_API_URL=/api
+
+# 빌드
 RUN npm run build
 
 # Production 이미지

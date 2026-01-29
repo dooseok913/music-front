@@ -149,7 +149,7 @@ const ExternalMusicSpace = () => {
     useEffect(() => {
         const fetchSpotifySpecial = async () => {
             try {
-                const res = await fetch('http://localhost:3001/api/ems/spotify-special')
+                const res = await fetch('/api/ems/spotify-special')
                 if (res.ok) {
                     const data = await res.json()
                     setSpotifySpecial(data)
@@ -286,7 +286,7 @@ const ExternalMusicSpace = () => {
         const top = window.screenY + (window.outerHeight - height) / 2
 
         const popup = window.open(
-            'http://localhost:3001/api/tidal/auth/login',
+            `${window.location.origin}/api/tidal/auth/login`,
             'TidalLogin',
             `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
         )

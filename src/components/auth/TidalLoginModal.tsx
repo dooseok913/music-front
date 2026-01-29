@@ -177,7 +177,7 @@ const TidalLoginModal = ({ isOpen, onClose, onSuccess }: TidalLoginModalProps) =
         localStorage.removeItem('tidal_login_result')
 
         window.open(
-            'http://localhost:3001/api/tidal/auth/login',
+            `${window.location.origin}/api/tidal/auth/login`,
             'TidalLogin',
             `width=${width},height=${height},top=${top},left=${left},noopener,noreferrer`
         )

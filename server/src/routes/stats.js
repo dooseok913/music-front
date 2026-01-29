@@ -193,6 +193,28 @@ router.get('/best/albums', async (req, res) => {
     }
 })
 
+// GET /api/stats/home - 홈 통계 (실 데이터)
+router.get('/home', async (req, res) => {
+    try {
+        const [playlistCount, trackCount, aiPending, likesCount] = await Promise.all([
+            queryOne('SELECT COUNT(*) as count FROM playlists'),
+            queryOne('SELECT COUNT(*) as count FROM tracks'),
+            queryOne('SELECT COUNT(*) as count FROM playlists WHERE ai_score = 0 OR ai_score IS NULL'),
+            queryOne('SELECT COALESCE(SUM(like_count), 0) as count FROM content_stats')
+        ])
+
+        res.json({
+            totalPlaylists: playlistCount?.count || 0,
+            totalTracks: trackCount?.count || 0,
+            aiPending: aiPending?.count || 0,
+            likes: likesCount?.count || 0
+        })
+    } catch (error) {
+        console.error('Error fetching home stats:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
 // POST /api/stats/like - 좋아요 토글
 router.post('/like', async (req, res) => {
     try {

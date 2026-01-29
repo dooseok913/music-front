@@ -5,15 +5,8 @@ import { playlistsApi, Playlist } from '../../services/api/playlists'
 import { tidalApi } from '../../services/api/tidal'
 import { itunesService } from '../../services/api/itunes'
 import { youtubeApi } from '../../services/api/youtube'
-import { statsApi, BestArtist, BestPlaylist, BestTrack, BestAlbum } from '../../services/api/stats'
+import { statsApi, BestArtist, BestPlaylist, BestTrack, BestAlbum, HomeStats } from '../../services/api/stats'
 import { useAuth } from '../../contexts/AuthContext'
-
-interface HomeStats {
-    totalPlaylists: number
-    totalTracks: number
-    aiPending: number
-    likes: number
-}
 
 interface TopTrack {
     title: string
@@ -70,16 +63,22 @@ const MusicHome = () => {
             setGmsPlaylists(gmsRes.playlists || [])
             setEmsPlaylists(emsRes.playlists || [])
 
-            // Calculate stats
-            const allPlaylists = [...(pmsRes.playlists || []), ...(gmsRes.playlists || []), ...(emsRes.playlists || [])]
-            const totalTracks = allPlaylists.reduce((sum, p) => sum + (p.trackCount || 0), 0)
-
-            setStats({
-                totalPlaylists: allPlaylists.length,
-                totalTracks,
-                aiPending: (gmsRes.playlists || []).length,
-                likes: Math.floor(totalTracks * 0.25) // Placeholder
-            })
+            // Load real stats from DB
+            try {
+                const homeStats = await statsApi.getHomeStats()
+                setStats(homeStats)
+            } catch (e) {
+                console.log('Failed to load home stats:', e)
+                // Fallback to calculated stats
+                const allPlaylists = [...(pmsRes.playlists || []), ...(gmsRes.playlists || []), ...(emsRes.playlists || [])]
+                const totalTracks = allPlaylists.reduce((sum, p) => sum + (p.trackCount || 0), 0)
+                setStats({
+                    totalPlaylists: allPlaylists.length,
+                    totalTracks,
+                    aiPending: 0,
+                    likes: 0
+                })
+            }
 
             // 3. Load platform top tracks (Real Data)
 
