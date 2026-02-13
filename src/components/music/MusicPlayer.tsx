@@ -61,6 +61,7 @@ const MusicPlayer = () => {
 
     // Local state
     const [isExpanded, setIsExpanded] = useState(false)
+    const [isCollapsed, setIsCollapsed] = useState(false)
     const [showQueue, setShowQueue] = useState(false)
     const [isLiked, setIsLiked] = useState(false)
     const [volume, setVolume] = useState(100)
@@ -323,8 +324,31 @@ const MusicPlayer = () => {
                 </div>
             )}
 
+            {/* ===== COLLAPSED TAB (불룩 튀어나온 버튼) ===== */}
+            {isCollapsed && (
+                <button
+                    onClick={() => setIsCollapsed(false)}
+                    className="fixed bottom-0 right-6 z-[401] bg-hud-bg-secondary/95 backdrop-blur-xl border border-b-0 border-hud-border-secondary rounded-t-xl px-4 py-2 flex items-center gap-2 hover:bg-hud-bg-card transition-all shadow-lg"
+                >
+                    {trackThumbnail ? (
+                        <img src={trackThumbnail} className="w-8 h-8 rounded-md object-cover" alt="" />
+                    ) : (
+                        <Music className="w-4 h-4 text-hud-text-muted" />
+                    )}
+                    <ChevronUp className="w-4 h-4 text-hud-text-muted" />
+                </button>
+            )}
+
             {/* ===== MAIN PLAYER BAR ===== */}
-            <div className="fixed bottom-0 left-0 right-0 bg-hud-bg-secondary/95 backdrop-blur-xl border-t border-hud-border-secondary z-[400] transition-all">
+            <div className={`fixed left-0 right-0 bg-hud-bg-secondary/95 backdrop-blur-xl border-t border-hud-border-secondary z-[400] transition-all duration-300 ease-in-out ${isCollapsed ? 'translate-y-full' : 'bottom-0 translate-y-0'}`} style={{ bottom: 0 }}>
+                {/* Collapse Button (내리기) */}
+                <button
+                    onClick={() => setIsCollapsed(true)}
+                    className="absolute -top-10 right-6 z-10 bg-hud-bg-secondary/95 backdrop-blur-xl border border-b-0 border-hud-border-secondary rounded-t-lg px-3 py-0.5 hover:bg-hud-bg-card transition-colors"
+                >
+                    <ChevronDown className="w-4 h-4 text-hud-text-muted" />
+                </button>
+
                 {/* Mobile Progress Bar (Top) */}
                 <div className="lg:hidden h-1 bg-hud-border-secondary">
                     <div className="h-full bg-hud-accent-primary transition-all" style={{ width: `${localProgress}%` }}></div>
