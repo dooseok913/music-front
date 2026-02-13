@@ -41,7 +41,15 @@ sudo git clone https://github.com/imorangepie20/2TeamFinalProject-PB.git      2T
 sudo git clone https://github.com/imorangepie20/FAST_API-PB.git               FAST_API
 
 cd humamAppleTeamPreject001
+```
 
+### DB 스키마/데이터 및 용량 초과 파일
+
+Git에 포함되지 않는 DB 스키마, 초기 데이터, 대용량 파일은 아래 Google Drive에서 다운로드 후 직접 배치해야 합니다:
+
+> **https://drive.google.com/drive/folders/1CgLZCJ072jbvc2mOgVJF6xkmYFO0spzH?usp=drive_link**
+
+```bash
 # 의존성 설치 및 빌드
 sudo npm install
 sudo npm run build

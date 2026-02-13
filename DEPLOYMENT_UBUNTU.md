@@ -76,7 +76,13 @@ git clone https://github.com/imorangepie20/2TeamFinalProject-PB.git 2TeamFinalPr
 git clone https://github.com/imorangepie20/FAST_API-PB.git FAST_API
 ```
 
-### 3.2 환경 변수 설정 (도메인 적용)
+### 3.2 DB 스키마/데이터 및 용량 초과 파일
+
+Git에 포함되지 않는 DB 스키마, 초기 데이터, 대용량 파일은 아래 Google Drive에서 다운로드 후 직접 배치해야 합니다:
+
+> **https://drive.google.com/drive/folders/1CgLZCJ072jbvc2mOgVJF6xkmYFO0spzH?usp=drive_link**
+
+### 3.3 환경 변수 설정 (도메인 적용)
 ```bash
 cd ~/music_space/humamAppleTeamPreject001
 
@@ -103,7 +109,7 @@ TIDAL_CLIENT_SECRET=...
 YOUTUBE_KEY=...
 ```
 
-### 3.3 이미지 저장소 생성 (권한 설정)
+### 3.4 이미지 저장소 생성 (권한 설정)
 ```bash
 # 호스트에 이미지 저장할 폴더 생성
 mkdir -p public/images/{artists,covers,tracks}
